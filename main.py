@@ -35,39 +35,38 @@ def check_user_subscription(user_id):
     return False
 
 
-# /start কমান্ড হ্যান্ডলার (ইনলাইন বাটন সহ)
+# /start কমান্ড হ্যান্ডলার
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
   user_id = message.from_user.id
 
   if check_user_subscription(user_id):
-    # যদি আগে থেকেই জয়েন করা থাকে
     bot.reply_to(
         message,
-        "🎉 **Welcome to Tricki Store!**\n\n"
-        "You are already a member of our channels. How can I help you today?",
+        "🎉 **Welcome back to Tricki Store!** 🛍️\n\n"
+        "✨ **You are already verified and ready to go!** How can I help you"
+        " today? 🚀",
         parse_mode="Markdown",
     )
   else:
-    # যদি জয়েন করা না থাকে, তবে বাটনসহ মেসেজ পাঠাবে
     markup = types.InlineKeyboardMarkup(row_width=1)
     btn_channel_1 = types.InlineKeyboardButton(
-        "📢 Join Channel 1", url=INVITE_LINK_1
+        "📢 Join Channel 1 🚀", url=INVITE_LINK_1
     )
     btn_channel_2 = types.InlineKeyboardButton(
-        "📢 Join Channel 2", url=INVITE_LINK_2
+        "📢 Join Channel 2 🚀", url=INVITE_LINK_2
     )
     btn_check = types.InlineKeyboardButton(
-        "🔄 Check Membership", callback_data="check_sub"
+        "🔄 Check Membership ✅", callback_data="check_sub"
     )
 
     markup.add(btn_channel_1, btn_channel_2, btn_check)
 
     warning_text = (
-        "⚠️ **Must Be Join To Channels!**\n\n"
-        "To use this bot, you must join our 2 private channels first.\n"
-        "Click the buttons below to join, then click the **Check Membership**"
-        " button."
+        "⚠️ **Access Denied! Must Join Channels!** 🔒\n\n"
+        "To use this bot, you **must join** our 2 private channels first! 🛑\n\n"
+        "👉 Click the buttons below to join both channels, then click the"
+        " **Check Membership** button! 👇"
     )
     bot.send_message(
         message.chat.id, warning_text, reply_markup=markup, parse_mode="Markdown"
@@ -80,19 +79,24 @@ def verify_subscription(call):
   user_id = call.from_user.id
 
   if check_user_subscription(user_id):
-    # যদি দুটোতেই জয়েন করা থাকে
-    bot.answer_callback_query(call.id, "✅ Verification Successful!")
+    # যদি দুটোতেই জয়েন করা থাকে, তবে আগের মেসেজটি ডিলিট (ভ্যানিশ) করে দেবে
+    try:
+      bot.delete_message(call.message.chat.id, call.message.message_id)
+    except Exception as e:
+      print(f"Error deleting message: {e}")
+
+    bot.answer_callback_query(call.id, "✅ Verification Successful! 🎉")
     bot.send_message(
         call.message.chat.id,
-        "🎉 **Thank you for joining both channels!**\n\n"
-        "Now you can use the bot. How can I help you today?",
+        "🎉 **Thank you for joining both channels!** 🔥\n\n"
+        "✨ **You can now use the bot freely.** How can I help you today? 🛍️",
         parse_mode="Markdown",
     )
   else:
-    # যদি দুটো বা যেকোনো একটিতে বাদ থাকে
+    # যদি জয়েন করা না থাকে
     bot.answer_callback_query(
         call.id,
-        "❌ You haven't joined both channels yet!",
+        "❌ You haven't joined both channels yet! Please join first.",
         show_alert=True,
     )
 
@@ -105,14 +109,16 @@ def handle_all_messages(message):
   if not check_user_subscription(user_id):
     bot.reply_to(
         message,
-        "⚠️ Please join our private channels first and verify via /start!",
+        "⚠️ **Please join our private channels first and verify via /start!** 🛑",
+        parse_mode="Markdown",
     )
     return
 
   bot.reply_to(
       message,
-      f"I received your message: '{message.text}'. You will be able to view"
-      " our store products very soon!",
+      f"💬 I received your message: *'{message.text}'*\n📦 You will be able"
+      " to view our store products very soon! ✨",
+      parse_mode="Markdown",
   )
 
 
