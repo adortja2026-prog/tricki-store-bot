@@ -73,25 +73,29 @@ def send_welcome(message):
     )
 
 
-# "Check Membership" বাটনে ক্লিক করলে যা কাজ করবে
+# "Check Membership" বাটনে ক্লিক করলে যা কাজ করবে (এডিট মেসেজ পদ্ধতি)
 @bot.callback_query_handler(func=lambda call: call.data == "check_sub")
 def verify_subscription(call):
   user_id = call.from_user.id
 
   if check_user_subscription(user_id):
-    # যদি দুটোতেই জয়েন করা থাকে, তবে আগের মেসেজটি ডিলিট (ভ্যানিশ) করে দেবে
-    try:
-      bot.delete_message(call.message.chat.id, call.message.message_id)
-    except Exception as e:
-      print(f"Error deleting message: {e}")
-
-    bot.answer_callback_query(call.id, "✅ Verification Successful! 🎉")
-    bot.send_message(
-        call.message.chat.id,
-        "🎉 **Thank you for joining both channels!** 🔥\n\n"
-        "✨ **You can now use the bot freely.** How can I help you today? 🛍️",
-        parse_mode="Markdown",
+    # যদি দুটোতেই জয়েন করা থাকে, তবে আগের মেসেজটির লেখা ও বাটন আপডেট করে সফলতার মেসেজ বানিয়ে দেবে
+    success_text = (
+        "🎉 **Verification Successful! Thank you for joining both channels!**"
+        " 🔥\n\n"
+        "✨ **You can now use the bot freely.** How can I help you today? 🛍️"
     )
+    try:
+      bot.edit_message_text(
+          chat_id=call.message.chat.id,
+          message_id=call.message.message_id,
+          text=success_text,
+          parse_mode="Markdown",
+      )
+    except Exception as e:
+      print(f"Error editing message: {e}")
+
+    bot.answer_callback_query(call.id, "✅ Verified Successfully! 🎉")
   else:
     # যদি জয়েন করা না থাকে
     bot.answer_callback_query(
