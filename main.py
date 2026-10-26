@@ -79,25 +79,23 @@ def verify_subscription(call):
   user_id = call.from_user.id
 
   if check_user_subscription(user_id):
-    # যদি দুটোতেই জয়েন করা থাকে, তবে আগের মেসেজটির লেখা ও বাটন আপডেট করে সফলতার মেসেজ বানিয়ে দেবে
     success_text = (
         "🎉 **Verification Successful! Thank you for joining both channels!**"
         " 🔥\n\n"
-        "✨ **You can now use the bot freely.** How can I help you today? 🛍️"
+        "✨ **You can now use the bot freely.** Type **Free key** to get your"
+        " license key! 🛍️"
     )
     try:
       bot.edit_message_text(
           chat_id=call.message.chat.id,
           message_id=call.message.message_id,
           text=success_text,
-          parse_mode="Markdown",
       )
     except Exception as e:
       print(f"Error editing message: {e}")
 
     bot.answer_callback_query(call.id, "✅ Verified Successfully! 🎉")
   else:
-    # যদি জয়েন করা না থাকে
     bot.answer_callback_query(
         call.id,
         "❌ You haven't joined both channels yet! Please join first.",
@@ -105,10 +103,11 @@ def verify_subscription(call):
     )
 
 
-# সাধারণ টেক্সট মেসেজের উত্তর
+# সাধারণ টেক্সট মেসেজ এবং Free key হ্যান্ডলার
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
   user_id = message.from_user.id
+  text = message.text.strip().lower()
 
   if not check_user_subscription(user_id):
     bot.reply_to(
@@ -118,12 +117,22 @@ def handle_all_messages(message):
     )
     return
 
-  bot.reply_to(
-      message,
-      f"💬 I received your message: *'{message.text}'*\n📦 You will be able"
-      " to view our store products very soon! ✨",
-      parse_mode="Markdown",
-  )
+  # ইউজার "free key" লিখলে এই কি-টি পাঠিয়ে দেবে
+  if text == "free key":
+    my_secret_key = "KURO-ECWM35-2NDYZY-MANP9J"
+    bot.reply_to(
+        message,
+        f"🔑 **Here is your Free Key:**\n`{my_secret_key}`\n\n✨ *Enjoy your"
+        " product!* 🛍️",
+        parse_mode="Markdown",
+    )
+  else:
+    bot.reply_to(
+        message,
+        f"💬 I received your message: *'{message.text}'*\n📦 Type **Free key**"
+        " to get your key! ✨",
+        parse_mode="Markdown",
+    )
 
 
 # বট চালু করার কোড
