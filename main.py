@@ -8,6 +8,9 @@ from telebot import types
 TOKEN = "8912797126:AAFmdn7oJEZdbZ1FzOQocrYKrvORF8LUqOE"
 bot = telebot.TeleBot(TOKEN)
 
+# আপনার নিজের টেলিগ্রাম আইডি এখানে দিন (স্ট্যাট দেখার জন্য)
+ADMIN_ID = 123456789  # <--- এখানে আপনার আসল টেলিগ্রাম ইউজার আইডি বসাবেন
+
 # রেন্ডারের ফ্লাস্ক ওয়েব সার্ভার (পোর্ট প্রবলেম ফিক্স করার জন্য)
 app = Flask("")
 
@@ -27,6 +30,28 @@ CHANNEL_ID = -1004343769999
 
 # আপনার চ্যানেলের ইনভাইট লিঙ্ক
 INVITE_LINK = "https://t.me/+8DV9O3hNpWtlMWM1"
+
+
+# ইউজারের আইডি ফাইলে সেভ করার ফাংশন
+def save_user(user_id):
+  if not os.path.exists("users.txt"):
+    with open("users.txt", "w") as f:
+      pass
+
+  with open("users.txt", "r") as f:
+    users = f.read().splitlines()
+
+  if str(user_id) not in users:
+    with open("users.txt", "a") as f:
+      f.write(str(user_id) + "\n")
+
+
+# মোট ইউজারের সংখ্যা দেখার ফাংশন
+def get_total_users():
+  if not os.path.exists("users.txt"):
+    return 0
+  with open("users.txt", "r") as f:
+    return len(f.read().splitlines())
 
 
 # ব্যবহারকারী চ্যানেলটিতে জয়েন করেছে কিনা তা চেক করার ফাংশন
@@ -49,10 +74,13 @@ def check_user_subscription(user_id):
 def send_welcome(message):
   user_id = message.from_user.id
 
+  # ইউজার বট স্টার্ট করলেই তার আইডি ফাইলে সেভ হবে
+  save_user(user_id)
+
   if check_user_subscription(user_id):
     bot.reply_to(
         message,
-        "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 𝐇𝐚𝐜𝐤𝐞𝐫!** 🎱\n\n"
+        "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 Hacker!** 🎱\n\n"
         "✨ **You are already verified and ready to go!** How can I help you"
         " today? 🚀",
         parse_mode="Markdown",
@@ -77,6 +105,20 @@ def send_welcome(message):
     bot.send_message(
         message.chat.id, warning_text, reply_markup=markup, parse_mode="Markdown"
     )
+
+
+# অ্যাডমিন স্ট্যাটাস দেখার জন্য /stats কমান্ড
+@bot.message_handler(commands=["stats"])
+def bot_stats(message):
+  if message.from_user.id == ADMIN_ID:
+    total = get_total_users()
+    bot.reply_to(
+        message,
+        f"📊 **Bot Statistics:**\n\n👥 Total Unique Users: **{total}**",
+        parse_mode="Markdown",
+    )
+  else:
+    bot.reply_to(message, "❌ You are not authorized to use this command!")
 
 
 # "Check Membership" বাটনে ক্লিক করলে যা কাজ করবে
@@ -190,7 +232,19 @@ def handle_device_selection(call):
   bot.answer_callback_query(call.id)
 
 
-# সাধারণ টেক্সট মেসেজ, Free key এবং 8 Ball Pool Hack হ্যান্ডলার
+# বট ইনবক্সে কোনো ফাইল আপলোড করলে তার File ID বের করে দেওয়ার হ্যান্ডলার
+@bot.message_handler(content_types=["document"])
+def get_file_id(message):
+  file_name = message.document.file_name
+  file_id = message.document.file_id
+  bot.reply_to(
+      message,
+      f"📂 **File Name:** {file_name}\n\n🔑 **File ID:**\n`{file_id}`",
+      parse_mode="Markdown",
+  )
+
+
+# সাধারণ টেক্সট মেসেজ, Free key এবং ফাইল পাঠানোর হ্যান্ডলার
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
   user_id = message.from_user.id
@@ -204,15 +258,42 @@ def handle_all_messages(message):
     )
     return
 
-  # ইউজার "free key" লিখলে
-  if text == "free key":
+  # ইউজার "free key", "free" বা "key" লিখলে
+  if text in ["free key", "free", "key"]:
     my_secret_key = "KURO-ECWM35-2NDYZY-MANP9J"
+
     bot.reply_to(
         message,
-        f"🔑 **Here is your Free Key:**\n`{my_secret_key}`\n\n✨ *Enjoy your"
-        " product!* 🛍️",
+        f"🔑 **Here is your Free Key:**\n`{my_secret_key}`\n\n📦 **Sending your"
+        " APK files now...** 👇",
         parse_mode="Markdown",
     )
+
+  # -------------------------------------------------------------
+  # [গুরুত্বপূর্ণ]: ফাইলের আইডি পাওয়ার পর নিচের কোটেশনের ভেতর বসাবেন
+  # -------------------------------------------------------------
+    file_id_1 = "YOUR_FIRST_FILE_ID_HERE"  # প্রথম ফাইলের আইডি এখানে বসাবেন
+    file_id_2 = "YOUR_SECOND_FILE_ID_HERE"  # দ্বিতীয় ফাইলের আইডি এখানে বসাবেন
+
+    try:
+      bot.send_document(
+          message.chat.id,
+          file_id_1,
+          caption="🤖 **Android Mod APK 1**",
+          parse_mode="Markdown",
+      )
+      bot.send_document(
+          message.chat.id,
+          file_id_2,
+          caption="🤖 **Android Mod APK 2**",
+          parse_mode="Markdown",
+      )
+    except Exception as e:
+      print(f"Error sending documents: {e}")
+      bot.send_message(
+          message.chat.id,
+          "⚠️ Files are currently being updated. Please try again later!",
+      )
 
   # ইউজার "8 ball pool hack" বা সম্পর্কিত কিছু লিখলে Android ও iOS বাটন দেখাবে
   elif "8 ball pool" in text or "hack" in text:
@@ -241,7 +322,7 @@ def handle_all_messages(message):
     )
 
 
-# বট এবং ওয়েব সার্ভার একসাথে চালু করার কোড
+# __main__ ব্লক
 if __name__ == "__main__":
   server_thread = Thread(target=run_web)
   server_thread.start()
