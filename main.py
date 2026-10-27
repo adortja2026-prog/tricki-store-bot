@@ -22,27 +22,20 @@ def run_web():
   app.run(host="0.0.0.0", port=port)
 
 
-# আপনার দুটি প্রাইভেট চ্যানেলের আইডি
-CHANNEL_1 = -1003980643287
-CHANNEL_2 = -1004351359406
+# আপনার অফিশিয়াল চ্যানেলের আইডি (প্রয়োজনে আপনার সঠিক চ্যানেল আইডি এখানে দেবেন)
+CHANNEL_ID = -1003980643287
 
-# আপনার প্রাইভেট চ্যানেল দুটির ইনভাইট লিঙ্ক
-INVITE_LINK_1 = "https://t.me/+iLQtJsjlFYQ4Mzhl"
-INVITE_LINK_2 = "https://t.me/+HbHhchqJLcdhNzM1"
+# আপনার চ্যানেলের ইনভাইট লিঙ্ক
+INVITE_LINK = "https://t.me/+8DV9O3hNpWtlMWM1"
 
 
-# ব্যবহারকারী চ্যানেলগুলোতে জয়েন করেছে কিনা তা চেক করার ফাংশন
+# ব্যবহারকারী চ্যানেলটিতে জয়েন করেছে কিনা তা চেক করার ফাংশন
 def check_user_subscription(user_id):
   try:
-    chat_member_1 = bot.get_chat_member(CHANNEL_1, user_id)
-    chat_member_2 = bot.get_chat_member(CHANNEL_2, user_id)
-
+    chat_member = bot.get_chat_member(CHANNEL_ID, user_id)
     valid_status = ["creator", "administrator", "member"]
 
-    if (
-        chat_member_1.status in valid_status
-        and chat_member_2.status in valid_status
-    ):
+    if chat_member.status in valid_status:
       return True
     else:
       return False
@@ -59,30 +52,27 @@ def send_welcome(message):
   if check_user_subscription(user_id):
     bot.reply_to(
         message,
-        "🎉 **Welcome back to Tricki Store!** 🛍️\n\n"
+        "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 𝐇𝐚𝐜𝐤𝐞𝐫!** 🎱\n\n"
         "✨ **You are already verified and ready to go!** How can I help you"
         " today? 🚀",
         parse_mode="Markdown",
     )
   else:
     markup = types.InlineKeyboardMarkup(row_width=1)
-    btn_channel_1 = types.InlineKeyboardButton(
-        "📢 Join Channel 1 🚀", url=INVITE_LINK_1
-    )
-    btn_channel_2 = types.InlineKeyboardButton(
-        "📢 Join Channel 2 🚀", url=INVITE_LINK_2
+    btn_channel = types.InlineKeyboardButton(
+        "📢 Join Our Official Channel 🚀", url=INVITE_LINK
     )
     btn_check = types.InlineKeyboardButton(
         "🔄 Check Membership ✅", callback_data="check_sub"
     )
 
-    markup.add(btn_channel_1, btn_channel_2, btn_check)
+    markup.add(btn_channel, btn_check)
 
     warning_text = (
-        "⚠️ **Access Denied! Must Join Channels!** 🔒\n\n"
-        "To use this bot, you **must join** our 2 private channels first! 🛑\n\n"
-        "👉 Click the buttons below to join both channels, then click the"
-        " **Check Membership** button! 👇"
+        "⚠️ **Access Denied! Must Join Channel!** 🔒\n\n"
+        "To use this bot, you **must join** our official channel first! 🛑\n\n"
+        "👉 Click the button below to join, then click the **Check Membership**"
+        " button! 👇"
     )
     bot.send_message(
         message.chat.id, warning_text, reply_markup=markup, parse_mode="Markdown"
@@ -96,8 +86,7 @@ def verify_subscription(call):
 
   if check_user_subscription(user_id):
     success_text = (
-        "🎉 **Verification Successful! Thank you for joining both channels!**"
-        " 🔥\n\n"
+        "🎉 **Verification Successful! Thank you for joining!** 🔥\n\n"
         "✨ **You can now use the bot freely.** Type **Free key** or **8 ball"
         " pool hack** to explore! 🛍️"
     )
@@ -114,7 +103,7 @@ def verify_subscription(call):
   else:
     bot.answer_callback_query(
         call.id,
-        "❌ You haven't joined both channels yet! Please join first.",
+        "❌ You haven't joined the channel yet! Please join first.",
         show_alert=True,
     )
 
@@ -135,7 +124,6 @@ def handle_device_selection(call):
         "• 30 Days + 10 Days Free (40 Days) — $30\n\n"
         "🛒 To purchase a key, contact our authorized seller: @Adorkuro"
     )
-    # ব্যাক বাটন যুক্ত করা হলো
     markup = types.InlineKeyboardMarkup()
     btn_back = types.InlineKeyboardButton(
         "🔙 Back to Menu", callback_data="back_to_menu"
@@ -165,7 +153,6 @@ def handle_device_selection(call):
         "⏳ Offer is available for a limited time.\n\n"
         "🛒 To purchase a key, contact our authorized seller: @Adorkuro"
     )
-    # ব্যাক বাটন যুক্ত করা হলো
     markup = types.InlineKeyboardMarkup()
     btn_back = types.InlineKeyboardButton(
         "🔙 Back to Menu", callback_data="back_to_menu"
@@ -181,7 +168,6 @@ def handle_device_selection(call):
     )
 
   elif call.data == "back_to_menu":
-    # ব্যাক করলে আবার মেইন অ্যান্ড্রয়েড ও আইওএস সিলেক্ট করার অপশন দেখাবে
     markup = types.InlineKeyboardMarkup(row_width=2)
     btn_android = types.InlineKeyboardButton(
         "🤖 Android", callback_data="price_android"
@@ -213,7 +199,7 @@ def handle_all_messages(message):
   if not check_user_subscription(user_id):
     bot.reply_to(
         message,
-        "⚠️ **Please join our private channels first and verify via /start!** 🛑",
+        "⚠️ **Please join our channel first and verify via /start!** 🛑",
         parse_mode="Markdown",
     )
     return
