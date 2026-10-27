@@ -8,7 +8,7 @@ from telebot import types
 TOKEN = "8912797126:AAFmdn7oJEZdbZ1FzOQocrYKrvORF8LUqOE"
 bot = telebot.TeleBot(TOKEN)
 
-# রেন্ডারের জন্য একটি ছোট ফ্লাস্ক ওয়েব সার্ভার (পোর্ট প্রবলেম ফিক্স করার জন্য)
+# রেন্ডারের ফ্লাস্ক ওয়েব সার্ভার (পোর্ট প্রবলেম ফিক্স করার জন্য)
 app = Flask("")
 
 
@@ -89,7 +89,7 @@ def send_welcome(message):
     )
 
 
-# "Check Membership" বাটনে ক্লিক করলে যা কাজ করবে (এডিট মেসেজ পদ্ধতি)
+# "Check Membership" বাটনে ক্লিক করলে যা কাজ করবে
 @bot.callback_query_handler(func=lambda call: call.data == "check_sub")
 def verify_subscription(call):
   user_id = call.from_user.id
@@ -98,8 +98,8 @@ def verify_subscription(call):
     success_text = (
         "🎉 **Verification Successful! Thank you for joining both channels!**"
         " 🔥\n\n"
-        "✨ **You can now use the bot freely.** Type **Free key** to get your"
-        " license key! 🛍️"
+        "✨ **You can now use the bot freely.** Type **Free key** or **8 ball"
+        " pool hack** to explore! 🛍️"
     )
     try:
       bot.edit_message_text(
@@ -119,7 +119,54 @@ def verify_subscription(call):
     )
 
 
-# সাধারণ টেক্সট মেসেজ এবং Free key হ্যান্ডলার
+# Android এবং iOS বাটন ক্লিক হ্যান্ডলার
+@bot.callback_query_handler(
+    func=lambda call: call.data in ["price_android", "price_ios"]
+)
+def handle_device_selection(call):
+  if call.data == "price_android":
+    android_price_text = (
+        "🤖 **Android Version - Price List** 📱\n\n"
+        "✨ Features: Mod Menu, Anti-Ban, Extended Line.\n\n"
+        "🎁 **Pricing:**\n"
+        "• 3 Days + 1 Day Free (4 Days) — $6\n"
+        "• 7 Days + 3 Days Free (10 Days) — $10\n"
+        "• 15 Days + 5 Days Free (20 Days) — $17\n"
+        "• 30 Days + 10 Days Free (40 Days) — $30\n\n"
+        "🛒 To purchase a key, contact our authorized seller: @Adorkuro"
+    )
+    bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        text=android_price_text,
+        parse_mode="Markdown",
+    )
+  elif call.data == "price_ios":
+    ios_price_text = (
+        "🎉 𝗗𝘂𝘀𝘀𝗲𝗵𝗿𝗮 𝗦𝗽𝗲𝗰𝗶𝗮𝗹 𝗢𝗳𝗳𝗲𝗿 🎁\n\n"
+        "This Dussehra, enjoy some extra days with every subscription at no"
+        " additional cost!\n\n"
+        "🎁 Buy a 3-day subscription, get 1 free day — 4 days in total. - 6$\n"
+        "🎁 Buy a 7-day subscription, get 3 free days — 10 days in total. -"
+        " 10$\n"
+        "🎁 Buy a 15-day subscription, get 5 free days — 20 days in total. -"
+        " 17$\n"
+        "🎁 Buy a 30-day subscription, get 10 free days — 40 days in total. -"
+        " 30$\n\n"
+        "⏳ Offer is available for a limited time.\n\n"
+        "🛒 To purchase a key, contact our authorized seller: @Adorkuro"
+    )
+    bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        text=ios_price_text,
+        parse_mode="Markdown",
+    )
+
+  bot.answer_callback_query(call.id)
+
+
+# সাধারণ টেক্সট মেসেজ, Free key এবং 8 Ball Pool Hack হ্যান্ডলার
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
   user_id = message.from_user.id
@@ -133,7 +180,7 @@ def handle_all_messages(message):
     )
     return
 
-  # ইউজার "free key" লিখলে এই কি-টি পাঠিয়ে দেবে
+  # ইউজার "free key" লিখলে
   if text == "free key":
     my_secret_key = "KURO-ECWM35-2NDYZY-MANP9J"
     bot.reply_to(
@@ -142,18 +189,36 @@ def handle_all_messages(message):
         " product!* 🛍️",
         parse_mode="Markdown",
     )
+
+  # ইউজার "8 ball pool hack" বা সম্পর্কিত কিছু লিখলে Android ও iOS বাটন দেখাবে
+  elif "8 ball pool" in text or "hack" in text:
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    btn_android = types.InlineKeyboardButton(
+        "🤖 Android", callback_data="price_android"
+    )
+    btn_ios = types.InlineKeyboardButton(
+        "🍏 iOS (Special Offer)", callback_data="price_ios"
+    )
+    markup.add(btn_android, btn_ios)
+
+    bot.reply_to(
+        message,
+        "🎱 **Choose your device platform to view the price list:** 👇",
+        reply_markup=markup,
+        parse_mode="Markdown",
+    )
+
   else:
     bot.reply_to(
         message,
-        f"💬 I received your message: *'{message.text}'*\n📦 Type **Free key**"
-        " to get your key! ✨",
+        f"💬 I received your message: *'{message.text}'*\n📦 Type **8 ball"
+        " pool hack** or **Free key**! ✨",
         parse_mode="Markdown",
     )
 
 
 # বট এবং ওয়েব সার্ভার একসাথে চালু করার কোড
 if __name__ == "__main__":
-  # ফ্লাস্ক সার্ভারকে ব্যাকগ্রাউন্ডে চালু করা
   server_thread = Thread(target=run_web)
   server_thread.start()
 
