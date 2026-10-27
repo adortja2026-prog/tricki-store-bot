@@ -119,9 +119,9 @@ def verify_subscription(call):
     )
 
 
-# Android এবং iOS বাটন ক্লিক হ্যান্ডলার
+# Android, iOS এবং Back বাটন ক্লিক হ্যান্ডলার
 @bot.callback_query_handler(
-    func=lambda call: call.data in ["price_android", "price_ios"]
+    func=lambda call: call.data in ["price_android", "price_ios", "back_to_menu"]
 )
 def handle_device_selection(call):
   if call.data == "price_android":
@@ -135,12 +135,21 @@ def handle_device_selection(call):
         "• 30 Days + 10 Days Free (40 Days) — $30\n\n"
         "🛒 To purchase a key, contact our authorized seller: @Adorkuro"
     )
+    # ব্যাক বাটন যুক্ত করা হলো
+    markup = types.InlineKeyboardMarkup()
+    btn_back = types.InlineKeyboardButton(
+        "🔙 Back to Menu", callback_data="back_to_menu"
+    )
+    markup.add(btn_back)
+
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
         text=android_price_text,
+        reply_markup=markup,
         parse_mode="Markdown",
     )
+
   elif call.data == "price_ios":
     ios_price_text = (
         "🎉 𝗗𝘂𝘀𝘀𝗲𝗵𝗿𝗮 𝗦𝗽𝗲𝗰𝗶𝗮𝗹 𝗢𝗳𝗳𝗲𝗿 🎁\n\n"
@@ -156,10 +165,39 @@ def handle_device_selection(call):
         "⏳ Offer is available for a limited time.\n\n"
         "🛒 To purchase a key, contact our authorized seller: @Adorkuro"
     )
+    # ব্যাক বাটন যুক্ত করা হলো
+    markup = types.InlineKeyboardMarkup()
+    btn_back = types.InlineKeyboardButton(
+        "🔙 Back to Menu", callback_data="back_to_menu"
+    )
+    markup.add(btn_back)
+
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
         text=ios_price_text,
+        reply_markup=markup,
+        parse_mode="Markdown",
+    )
+
+  elif call.data == "back_to_menu":
+    # ব্যাক করলে আবার মেইন অ্যান্ড্রয়েড ও আইওএস সিলেক্ট করার অপশন দেখাবে
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    btn_android = types.InlineKeyboardButton(
+        "🤖 Android", callback_data="price_android"
+    )
+    btn_ios = types.InlineKeyboardButton(
+        "🍏 iOS (Special Offer)", callback_data="price_ios"
+    )
+    markup.add(btn_android, btn_ios)
+
+    menu_text = "🎱 **Choose your device platform to view the price list:** 👇"
+
+    bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        text=menu_text,
+        reply_markup=markup,
         parse_mode="Markdown",
     )
 
