@@ -9,7 +9,7 @@ TOKEN = "8912797126:AAFmdn7oJEZdbZ1FzOQocrYKrvORF8LUqOE"
 bot = telebot.TeleBot(TOKEN)
 
 # আপনার নিজের টেলিগ্রাম আইডি এখানে দিন (স্ট্যাট দেখার জন্য)
-ADMIN_ID = 123456789  # <--- এখানে আপনার আসল টেলিগ্রাম ইউজার আইডি বসাবেন
+ADMIN_ID = 123456789  # <--- আপনার আসল টেলিগ্রাম ইউজার আইডি এখানে দেবেন
 
 # রেন্ডারের ফ্লাস্ক ওয়েব সার্ভার (পোর্ট প্রবলেম ফিক্স করার জন্য)
 app = Flask("")
@@ -69,20 +69,27 @@ def check_user_subscription(user_id):
     return False
 
 
+# মেনু বাটন তৈরি করার ফাংশন (চ্যাটের নিচে যে দুটি বাটন থাকবে)
+def get_main_menu_keyboard():
+  markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+  btn_free = types.KeyboardButton("🎁 Free Key / Hack")
+  btn_paid = types.KeyboardButton("🎱 8 Ball Pool Hack")
+  markup.add(btn_free, btn_paid)
+  return markup
+
+
 # /start কমান্ড হ্যান্ডলার
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
   user_id = message.from_user.id
-
-  # ইউজার বট স্টার্ট করলেই তার আইডি ফাইলে সেভ হবে
   save_user(user_id)
 
   if check_user_subscription(user_id):
-    bot.reply_to(
-        message,
+    bot.send_message(
+        message.chat.id,
         "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 𝐇𝐚𝐜𝐤𝐞𝐫!** 🎱\n\n"
-        "✨ **You are already verified and ready to go!** How can I help you"
-        " today? 🚀",
+        "✨ **You are verified!** Choose an option from the menu below: 👇",
+        reply_markup=get_main_menu_keyboard(),
         parse_mode="Markdown",
     )
   else:
@@ -93,7 +100,6 @@ def send_welcome(message):
     btn_check = types.InlineKeyboardButton(
         "🔄 Check Membership ✅", callback_data="check_sub"
     )
-
     markup.add(btn_channel, btn_check)
 
     warning_text = (
@@ -129,18 +135,19 @@ def verify_subscription(call):
   if check_user_subscription(user_id):
     success_text = (
         "🎉 **Verification Successful! Thank you for joining!** 🔥\n\n"
-        "✨ **You can now use the bot freely.** Type **Free key** or **8 ball"
-        " pool hack** to explore! 🛍️"
+        "✨ **You can now use the bot freely.** Choose from the menu below! 👇"
     )
     try:
-      bot.edit_message_text(
-          chat_id=call.message.chat.id,
-          message_id=call.message.message_id,
-          text=success_text,
-      )
+      bot.delete_message(call.message.chat.id, call.message.message_id)
     except Exception as e:
-      print(f"Error editing message: {e}")
+      print(f"Error deleting message: {e}")
 
+    bot.send_message(
+        call.message.chat.id,
+        success_text,
+        reply_markup=get_main_menu_keyboard(),
+        parse_mode="Markdown",
+    )
     bot.answer_callback_query(call.id, "✅ Verified Successfully! 🎉")
   else:
     bot.answer_callback_query(
@@ -150,7 +157,7 @@ def verify_subscription(call):
     )
 
 
-# Android, iOS এবং Back বাটন ক্লিক হ্যান্ডলার
+# Android, iOS এবং Back বাটন ইনলাইন ক্লিক হ্যান্ডলার
 @bot.callback_query_handler(
     func=lambda call: call.data in ["price_android", "price_ios", "back_to_menu"]
 )
@@ -232,11 +239,11 @@ def handle_device_selection(call):
   bot.answer_callback_query(call.id)
 
 
-# সাধারণ টেক্সট মেসেজ, Free key এবং APK ফাইল পাঠানোর হ্যান্ডলার
+# সাধারণ টেক্সট মেসেজ ও মেনু বাটনের হ্যান্ডলার
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
   user_id = message.from_user.id
-  text = message.text.strip().lower()
+  text = message.text.strip()
 
   if not check_user_subscription(user_id):
     bot.reply_to(
@@ -246,44 +253,19 @@ def handle_all_messages(message):
     )
     return
 
-  # ইউজার "free key", "free" বা "key" লিখলে
-  if text in ["free key", "free", "key"]:
+  # ইউজার যখন নিচের মেনু থেকে "🎁 Free Key / Hack" এ ক্লিক করবে
+  if text == "🎁 Free Key / Hack":
     my_secret_key = "KURO-ECWM35-2NDYZY-MANP9J"
-
-    # প্রথমে ফ্রি কি-টি টেক্সট আকারে পাঠাবে
     bot.reply_to(
         message,
-        f"🔑 **Here is your Free Key:**\n`{my_secret_key}`\n\n📦 **Downloading your"
-        " APK files below...** 👇",
+        f"🔑 **Here is your Free Key:**\n`{my_secret_key}`\n\n✨ *Enjoy your"
+        " product!* 🛍️",
+        reply_markup=get_main_menu_keyboard(),
         parse_mode="Markdown",
     )
 
-    # -------------------------------------------------------------
-    # এখানে আপনার এপিকে (APK) ফাইল পাঠানোর ব্যবস্থা করা হয়েছে।
-    # আপনি আপনার এপিকে ফাইলগুলোর লিংক বা সরাসরি ফাইল পাঠাতে পারেন।
-    # যেমন সরাসরি ফাইল পাঠাতে চাইলে নিচের মতো করতে পারেন:
-    # bot.send_document(message.chat.id, open('file1.apk', 'rb'))
-    # bot.send_document(message.chat.id, open('file2.apk', 'rb'))
-    # অথবা সরাসরি ডাউনলোড লিংক বা টেলিগ্রাম ফাইলের মাধ্যমে দিতে পারেন:
-    # -------------------------------------------------------------
-
-    # উদাহরণস্বরূপ সরাসরি ফাইল লিংক বা ক্যাপশনসহ পাঠানোর কোড:
-    try:
-      # আপনার প্রথম এপিকে ফাইলের লিংক বা পাথ এখানে দিতে পারেন
-      apk_url_1 = "https://example.com/file1.apk"  # আপনার আসল এপিকে লিংক বসাবেন
-      apk_url_2 = "https://example.com/file2.apk"  # আপনার আসল এপিকে লিংক বসাবেন
-
-      bot.send_message(
-          message.chat.id,
-          f"🤖 **APK File 1 (Mod Menu):**\n{apk_url_1}\n\n🍏 **APK File 2 (Bypass"
-          f" Tool):**\n{apk_url_2}",
-          parse_mode="Markdown",
-      )
-    except Exception as e:
-      print(f"Error sending APKs: {e}")
-
-  # ইউজার "8 ball pool hack" বা সম্পর্কিত কিছু লিখলে Android ও iOS বাটন দেখাবে
-  elif "8 ball pool" in text or "hack" in text:
+  # ইউজার যখন নিচের মেনু থেকে "🎱 8 Ball Pool Hack" এ ক্লিক করবে
+  elif text == "🎱 8 Ball Pool Hack" or "8 ball pool" in text.lower() or "hack" in text.lower():
     markup = types.InlineKeyboardMarkup(row_width=2)
     btn_android = types.InlineKeyboardButton(
         "🤖 Android", callback_data="price_android"
@@ -303,13 +285,12 @@ def handle_all_messages(message):
   else:
     bot.reply_to(
         message,
-        f"💬 I received your message: *'{message.text}'*\n📦 Type **8 ball"
-        " pool hack** or **Free key**! ✨",
+        "💬 Please choose an option from the menu below! 👇",
+        reply_markup=get_main_menu_keyboard(),
         parse_mode="Markdown",
     )
 
 
-# __main__ ব্লক
 if __name__ == "__main__":
   server_thread = Thread(target=run_web)
   server_thread.start()
