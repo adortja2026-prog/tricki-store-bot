@@ -1,10 +1,26 @@
 import os
+from threading import Thread
+from flask import Flask
 import telebot
 from telebot import types
 
 # আপনার টেলিগ্রাম বটের টোকেন
 TOKEN = "8912797126:AAFmdn7oJEZdbZ1FzOQocrYKrvORF8LUqOE"
 bot = telebot.TeleBot(TOKEN)
+
+# রেন্ডারের জন্য একটি ছোট ফ্লাস্ক ওয়েব সার্ভার (পোর্ট প্রবলেম ফিক্স করার জন্য)
+app = Flask("")
+
+
+@app.route("/")
+def home():
+  return "Bot is active and running!"
+
+
+def run_web():
+  port = int(os.environ.get("PORT", 8080))
+  app.run(host="0.0.0.0", port=port)
+
 
 # আপনার দুটি প্রাইভেট চ্যানেলের আইডি
 CHANNEL_1 = -1003980643287
@@ -135,7 +151,11 @@ def handle_all_messages(message):
     )
 
 
-# বট চালু করার কোড
+# বট এবং ওয়েব সার্ভার একসাথে চালু করার কোড
 if __name__ == "__main__":
-  print("Bot is running...")
+  # ফ্লাস্ক সার্ভারকে ব্যাকগ্রাউন্ডে চালু করা
+  server_thread = Thread(target=run_web)
+  server_thread.start()
+
+  print("Bot and Web Server are running...")
   bot.infinity_polling()
