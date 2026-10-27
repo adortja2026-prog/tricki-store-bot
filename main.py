@@ -80,7 +80,7 @@ def send_welcome(message):
   if check_user_subscription(user_id):
     bot.reply_to(
         message,
-        "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 Hacker!** 🎱\n\n"
+        "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 𝐇𝐚𝐜𝐤𝐞𝐫!** 🎱\n\n"
         "✨ **You are already verified and ready to go!** How can I help you"
         " today? 🚀",
         parse_mode="Markdown",
@@ -232,19 +232,7 @@ def handle_device_selection(call):
   bot.answer_callback_query(call.id)
 
 
-# বট ইনবক্সে কোনো ফাইল আপলোড করলে তার File ID বের করে দেওয়ার হ্যান্ডলার
-@bot.message_handler(content_types=["document"])
-def get_file_id(message):
-  file_name = message.document.file_name
-  file_id = message.document.file_id
-  bot.reply_to(
-      message,
-      f"📂 **File Name:** {file_name}\n\n🔑 **File ID:**\n`{file_id}`",
-      parse_mode="Markdown",
-  )
-
-
-# সাধারণ টেক্সট মেসেজ, Free key এবং ফাইল পাঠানোর হ্যান্ডলার
+# সাধারণ টেক্সট মেসেজ, Free key এবং APK ফাইল পাঠানোর হ্যান্ডলার
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
   user_id = message.from_user.id
@@ -262,38 +250,37 @@ def handle_all_messages(message):
   if text in ["free key", "free", "key"]:
     my_secret_key = "KURO-ECWM35-2NDYZY-MANP9J"
 
+    # প্রথমে ফ্রি কি-টি টেক্সট আকারে পাঠাবে
     bot.reply_to(
         message,
-        f"🔑 **Here is your Free Key:**\n`{my_secret_key}`\n\n📦 **Sending your"
-        " APK files now...** 👇",
+        f"🔑 **Here is your Free Key:**\n`{my_secret_key}`\n\n📦 **Downloading your"
+        " APK files below...** 👇",
         parse_mode="Markdown",
     )
 
-  # -------------------------------------------------------------
-  # [গুরুত্বপূর্ণ]: ফাইলের আইডি পাওয়ার পর নিচের কোটেশনের ভেতর বসাবেন
-  # -------------------------------------------------------------
-    file_id_1 = "YOUR_FIRST_FILE_ID_HERE"  # প্রথম ফাইলের আইডি এখানে বসাবেন
-    file_id_2 = "YOUR_SECOND_FILE_ID_HERE"  # দ্বিতীয় ফাইলের আইডি এখানে বসাবেন
+    # -------------------------------------------------------------
+    # এখানে আপনার এপিকে (APK) ফাইল পাঠানোর ব্যবস্থা করা হয়েছে।
+    # আপনি আপনার এপিকে ফাইলগুলোর লিংক বা সরাসরি ফাইল পাঠাতে পারেন।
+    # যেমন সরাসরি ফাইল পাঠাতে চাইলে নিচের মতো করতে পারেন:
+    # bot.send_document(message.chat.id, open('file1.apk', 'rb'))
+    # bot.send_document(message.chat.id, open('file2.apk', 'rb'))
+    # অথবা সরাসরি ডাউনলোড লিংক বা টেলিগ্রাম ফাইলের মাধ্যমে দিতে পারেন:
+    # -------------------------------------------------------------
 
+    # উদাহরণস্বরূপ সরাসরি ফাইল লিংক বা ক্যাপশনসহ পাঠানোর কোড:
     try:
-      bot.send_document(
+      # আপনার প্রথম এপিকে ফাইলের লিংক বা পাথ এখানে দিতে পারেন
+      apk_url_1 = "https://example.com/file1.apk"  # আপনার আসল এপিকে লিংক বসাবেন
+      apk_url_2 = "https://example.com/file2.apk"  # আপনার আসল এপিকে লিংক বসাবেন
+
+      bot.send_message(
           message.chat.id,
-          file_id_1,
-          caption="🤖 **Android Mod APK 1**",
-          parse_mode="Markdown",
-      )
-      bot.send_document(
-          message.chat.id,
-          file_id_2,
-          caption="🤖 **Android Mod APK 2**",
+          f"🤖 **APK File 1 (Mod Menu):**\n{apk_url_1}\n\n🍏 **APK File 2 (Bypass"
+          f" Tool):**\n{apk_url_2}",
           parse_mode="Markdown",
       )
     except Exception as e:
-      print(f"Error sending documents: {e}")
-      bot.send_message(
-          message.chat.id,
-          "⚠️ Files are currently being updated. Please try again later!",
-      )
+      print(f"Error sending APKs: {e}")
 
   # ইউজার "8 ball pool hack" বা সম্পর্কিত কিছু লিখলে Android ও iOS বাটন দেখাবে
   elif "8 ball pool" in text or "hack" in text:
