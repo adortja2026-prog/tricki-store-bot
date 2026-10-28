@@ -3,7 +3,7 @@ import os
 import telebot
 from flask import Flask, request
 
-# আপনার নতুন টোকেন এবং অ্যাডমিন আইডি
+# আপনার টেলিগ্রাম বট টোকেন এবং অ্যাডমিন আইডি
 TOKEN = "8912797126:AAF6EFSQZU-tySXsGl1t__AAT-7oAc2MDp8"
 ADMIN_ID = 7559861666
 
@@ -11,8 +11,8 @@ ADMIN_ID = 7559861666
 CHANNEL_ID = -1004343769999
 CHANNEL_INVITE_LINK = "https://t.me/+8DV9O3hNpWtlMWM1"
 
-# আপনার রেন্ডার অ্যাপের লিংক এখানে বসাবেন (যেমন: https://your-app-name.onrender.com)
-RENDER_URL = "https://YOUR_RENDER_APP_NAME.onrender.com"
+# আপনার রেন্ডার অ্যাপের আসল পাবলিক লিংক এখানে বসানো হলো
+RENDER_URL = "https://tricki-store-bot.onrender.com"
 
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = "keywords.json"
@@ -164,7 +164,7 @@ def set_new_code(message):
         return
 
     keyword = text_parts[1].lower()
-    new_code_text = text_parts[2]
+    new_code_text = text_parts.2 if len(text_parts) > 2 else ""
 
     data = load_data()
     data[keyword] = new_code_text
@@ -208,7 +208,7 @@ def index():
 
 
 if __name__ == '__main__':
-    # ওয়েবਹੁক সেটআপ করা
+    # ওয়েবਹੁক অটো সেটআপ করা
     bot.remove_webhook()
     bot.set_webhook(url=f'{RENDER_URL}/{TOKEN}')
     
