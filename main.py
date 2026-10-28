@@ -251,8 +251,8 @@ def broadcast_message(message):
     bot.send_message(message.chat.id, f"✅ **Broadcast Completed!**\n\n🎯 Successfully sent: {success_count}\n❌ Failed (Blocked bot): {fail_count}")
 
 
-# ৭. সাধারণ ইউজার টেক্সট হ্যান্ডলার এবং অ্যাডমিন রিপ্লাই হ্যান্ডলার
-@bot.message_handler(func=lambda message: True)
+# ৭. সাধারণ ইউজার টেক্সট হ্যান্ডলার এবং অ্যাডমিন মিডিয়া/টেキスト রিপ্লাই হ্যান্ডলার
+@bot.message_handler(content_types=['text', 'photo', 'video', 'document'], func=lambda message: True)
 def keyword_responder(message):
     user_id = message.from_user.id
     add_user(user_id)
@@ -262,44 +262,66 @@ def keyword_responder(message):
             bot.reply_to(message, "❌ To use the bot, you must join our channel first! Type `/start` and try again.", parse_mode="Markdown")
             return
 
-    # যদি অ্যাডমিন নিজে বটে মেসেজ পাঠান এবং সেটি কোনো নোটিফিকেশন মেসেজের রিপ্লাই হয়
+    # যদি অ্যাডমিন নিজে বটে মেসেজ পাঠান এবং সেটি কোনো ইউজারের নোটিফিকেশনের রিপ্লাই হয়
     if user_id == ADMIN_ID and message.reply_to_message:
         try:
             replied_msg = message.reply_to_message
             if replied_msg.text and "🆔 ID:" in replied_msg.text:
-                # টেক্সট থেকে ইউজারের আসল আইডি বের করার সহজ লজিক
                 lines = replied_msg.text.split("\n")
+                target_user_id = None
                 for line in lines:
                     if "🆔 ID:" in line:
                         target_user_id = int(line.replace("🆔 ID:", "").replace("`", "").strip())
+                        break
+                
+                if target_user_id:
+                    # যদি অ্যাডমিন ভিডিও পাঠান
+                    if message.video:
+                        bot.send_video(target_user_id, message.video.file_id, caption=message.caption or "")
+                    # যদি অ্যাডমিন ছবি পাঠান
+                    elif message.photo:
+                        bot.send_photo(target_user_id, message.photo[-1].file_id, caption=message.caption or "")
+                    # যদি অ্যাডমিন ডকুমেন্ট বা এপিকে ফাইল পাঠান
+                    elif message.document:
+                        bot.send_document(target_user_id, message.document.file_id, caption=message.caption or "")
+                    # যদি অ্যাডমিন সাধারণ টেক্সট পাঠান
+                    elif message.text:
                         bot.send_message(target_user_id, f"💬 **Support Reply:**\n\n{message.text}", parse_mode="Markdown")
-                        bot.reply_to(message, "✅ Reply sent successfully to the user!")
-                        return
+                    
+                    bot.reply_to(message, "✅ Reply sent successfully to the user!")
+                    return
         except Exception as e:
-            print(f"Error replying to user: {e}")
+            print(f"Error replying with media to user: {e}")
 
-    user_text = message.text.strip().lower()
-    data = load_data()
+    if user_id == ADMIN_ID:
+        return
 
-    if user_text in data:
-        bot.reply_to(message, f"✨ **Your requested information:**\n\n{data[user_text]}", parse_mode="Markdown")
-    else:
-        # যদি অ্যাডমিন হন, সাধারণ টেক্সট ইগনোর করবে
-        if user_id == ADMIN_ID:
+    # কি-ওয়ার্ড ম্যাচ করলে সেটি পাঠানো
+    if message.text:
+        user_text = message.text.strip().lower()
+        data = load_data()
+        if user_text in data:
+            bot.reply_to(message, f"✨ **Your requested information:**\n\n{data[user_text]}", parse_mode="Markdown")
             return
 
-        # অজানা মেসেজ হলে ইউজারকে কোনো এরর মেসেজ না দিয়ে শুধু অ্যাডমিনের কাছে নোটিশ পাঠানো
-        try:
-            bot.send_message(
-                ADMIN_ID, 
-                f"👤 **User:** [{message.from_user.first_name}](tg://user?id={user_id})\n"
-                f"🆔 ID: `{user_id}`\n\n"
-                f"💬 **Message:** {message.text}\n\n"
-                f"👉 এই ইউজারকে উত্তর দিতে চাইলে এই মেসেজে Reply দিয়ে আপনার উত্তর লিখে পাঠান।", 
-                parse_mode="Markdown"
-            )
-        except Exception as e:
-            print(f"Error sending message to admin: {e}")
+    # অজানা মেসেজ বা প্রশ্ন হলে ইউজারের তথ্যসহ অ্যাডমিনের কাছে পাঠানো
+    try:
+        msg_type = "Text"
+        if message.video: msg_type = "Video"
+        elif message.photo: msg_type = "Photo"
+        elif message.document: msg_type = "Document/APK"
+
+        bot.send_message(
+            ADMIN_ID, 
+            f"👤 **User:** [{message.from_user.first_name}](tg://user?id={user_id})\n"
+            f"🆔 ID: `{user_id}`\n"
+            f"📦 **Type:** {msg_type}\n\n"
+            f"💬 **Message/Caption:** {message.text or message.caption or 'No text'}\n\n"
+            f"👉 এই ইউজারকে ভিডিও বা উত্তর দিতে চাইলে এই নোটিফিকেশন মেসেজে Reply দিয়ে আপনার ভিডিও বা উত্তরটি পাঠান।", 
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        print(f"Error sending message to admin: {e}")
 
 
 # ফ্লাস্ক ওয়েবਹੁক রুট (Webhook Route)
