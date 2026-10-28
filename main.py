@@ -63,7 +63,7 @@ def check_user_subscription(user_id):
 @bot.message_handler(commands=['start'])
 def start_command(message):
     user_id = message.from_user.id
-    add_user(user_id)  # ব্রডকাস্টের জন্য ইউজার সেভ করা হলো
+    add_user(user_id)
     
     if not check_user_subscription(user_id):
         markup = telebot.types.InlineKeyboardMarkup()
@@ -191,14 +191,33 @@ def set_new_code(message):
     bot.reply_to(message, f"✅ **Success!** New code set for keyword '{keyword}':\n\n{new_code_text}", parse_mode="Markdown")
 
 
-# ৫. অ্যাডমিন কমান্ড: ব্রডকাস্ট (সব ইউজারের কাছে মেসেজ পাঠানো)
+# ৫. অ্যাডমিন কমান্ড: মোট ইউজার সংখ্যা দেখার জন্য
+@bot.message_handler(commands=['users'])
+def total_users_count(message):
+    if message.from_user.id != ADMIN_ID:
+        bot.reply_to(message, "❌ Sorry, this command can only be used by the admin!")
+        return
+
+    if not os.path.exists(USERS_FILE):
+        bot.reply_to(message, "📊 Total Users: 0")
+        return
+
+    with open(USERS_FILE, "r", encoding="utf-8") as f:
+        try:
+            users = json.load(f)
+        except json.JSONDecodeError:
+            users = []
+
+    bot.reply_to(message, f"📊 **Total Bot Users:** `{len(users)}`", parse_mode="Markdown")
+
+
+# ৬. অ্যাডমিন কমান্ড: ব্রডকাস্ট (সব ইউজারের কাছে মেসেজ পাঠানো)
 @bot.message_handler(commands=['broadcast'])
 def broadcast_message(message):
     if message.from_user.id != ADMIN_ID:
         bot.reply_to(message, "❌ Sorry, this command can only be used by the admin!")
         return
 
-    # কমান্ডের পর কি মেসেজ দেওয়া হয়েছে তা আলাদা করা
     text_parts = message.text.split(maxsplit=1)
     if len(text_parts) < 2:
         bot.reply_to(message, "⚠️ **Use the correct format. Example:**\n`/broadcast Hello everyone, new offer is live!`", parse_mode="Markdown")
@@ -232,7 +251,7 @@ def broadcast_message(message):
     bot.send_message(message.chat.id, f"✅ **Broadcast Completed!**\n\n🎯 Successfully sent: {success_count}\n❌ Failed (Blocked bot): {fail_count}")
 
 
-# ৬. সাধারণ ইউজার টেক্সট হ্যান্ডলার
+# ৭. সাধারণ ইউজার টেক্সট হ্যান্ডলার (অজানা মেসেজ অ্যাডমিনের কাছে ফরোয়ার্ড করা সহ)
 @bot.message_handler(func=lambda message: True)
 def keyword_responder(message):
     user_id = message.from_user.id
@@ -248,6 +267,27 @@ def keyword_responder(message):
     if user_text in data:
         bot.reply_to(message, f"✨ **Your requested information:**\n\n{data[user_text]}", parse_mode="Markdown")
     else:
+        # যদি অ্যাডমিন নিজে বটে মেসেজ পাঠান এবং সেটি কোনো ইউজারের মেসেজের রিপ্লাই হয়
+        if user_id == ADMIN_ID and message.reply_to_message:
+            try:
+                # যে মেসেজটি ফরোয়ার্ড করা হয়েছিল, তার ক্যাপশন বা টেক্সট থেকে ইউজারের আসল আইডি বের করা
+                forwarded_msg = message.reply_to_message
+                if forwarded_msg.forward_from:
+                    target_user_id = forwarded_msg.forward_from.id
+                    bot.send_message(target_user_id, f"💬 **Admin Reply:**\n\n{message.text}", parse_mode="Markdown")
+                    bot.reply_to(message, "✅ Reply sent to the user successfully!")
+                    return
+            except Exception as e:
+                print(f"Error replying to user: {e}")
+
+        # সাধারণ ইউজারের অজানা মেসেজ অ্যাডমিনের ইনবক্সে ফরোয়ার্ড করা
+        if user_id != ADMIN_ID:
+            try:
+                bot.forward_message(ADMIN_ID, message.chat.id, message.id)
+                bot.send_message(ADMIN_ID, f"👤 **New message from user:** [{message.from_user.first_name}](tg://user?id={user_id})\n💡 *Reply directly to this message to answer the user.*", parse_mode="Markdown")
+            except Exception as e:
+                print(f"Error forwarding message to admin: {e}")
+
         bot.reply_to(message, "❓ Sorry, nothing found with this keyword. Or type `/start` to view the menu.", parse_mode="Markdown")
 
 
