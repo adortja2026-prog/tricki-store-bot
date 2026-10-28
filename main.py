@@ -11,7 +11,7 @@ ADMIN_ID = 7559861666
 CHANNEL_ID = -1004343769999
 CHANNEL_INVITE_LINK = "https://t.me/+8DV9O3hNpWtlMWM1"
 
-# আপনার রেন্ডার অ্যাপের আসল পাবলিক লিংক এখানে বসানো হলো
+# আপনার রেন্ডার অ্যাপের আসল পাবলিক লিংক
 RENDER_URL = "https://tricki-store-bot.onrender.com"
 
 bot = telebot.TeleBot(TOKEN)
@@ -164,7 +164,7 @@ def set_new_code(message):
         return
 
     keyword = text_parts[1].lower()
-    new_code_text = text_parts.2 if len(text_parts) > 2 else ""
+    new_code_text = text_parts[2]
 
     data = load_data()
     data[keyword] = new_code_text
