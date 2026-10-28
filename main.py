@@ -4,7 +4,8 @@ from flask import Flask
 import telebot
 from telebot import types
 
-TOKEN = "8912797126:AAFmdn7oJEZdbZ1FzOQocrYKrvORF8LUqOE"
+# আপনার নতুন টেলিগ্রাম বটের টোকেন এখানে বসানো হলো
+TOKEN = "8912797126:AAEo6jGLJzNelJtMM3t3iZ9FEDqlMmo8gl0"
 bot = telebot.TeleBot(TOKEN)
 
 ADMIN_ID = 123456789
@@ -20,10 +21,6 @@ def home():
 def run_web():
   port = int(os.environ.get("PORT", 8080))
   app.run(host="0.0.0.0", port=port)
-
-
-CHANNEL_ID = -1004343769999
-INVITE_LINK = "https://t.me/+8DV9O3hNpWtlMWM1"
 
 
 def save_user(user_id):
@@ -44,11 +41,6 @@ def get_total_users():
     return len(f.read().splitlines())
 
 
-# চ্যানেল চেক বাইপাস করে সরাসরি ট্রু করা হলো যাতে কোনো ঝামেলা না করে
-def check_user_subscription(user_id):
-  return True
-
-
 def get_main_menu_keyboard():
   markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
   btn_free = types.KeyboardButton("🎁 Free Key / Hack")
@@ -65,7 +57,7 @@ def send_welcome(message):
   bot.send_message(
       message.chat.id,
       "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 𝐇𝐚𝐜𝐤𝐞𝐫!** 🎱\n\n"
-      "✨ **You are verified!** Choose an option from the menu below: 👇",
+      "✨ Choose an option from the menu below: 👇",
       reply_markup=get_main_menu_keyboard(),
       parse_mode="Markdown",
   )
