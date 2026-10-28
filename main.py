@@ -44,34 +44,46 @@ def start_command(message):
     
     if not check_user_subscription(user_id):
         markup = telebot.types.InlineKeyboardMarkup()
-        btn_channel = telebot.types.InlineKeyboardButton("📢 **Join Our Channel**", url=CHANNEL_INVITE_LINK)
-        btn_check = telebot.types.InlineKeyboardButton("🔄 **Check Again**", callback_data="check_sub")
+        # বাটন থেকে স্টার সরিয়ে দেওয়া হয়েছে
+        btn_channel = telebot.types.InlineKeyboardButton("📢 Join Our Channel", url=CHANNEL_INVITE_LINK)
+        btn_check = telebot.types.InlineKeyboardButton("🔄 Check Again", callback_data="check_sub")
         markup.add(btn_channel)
         markup.add(btn_check)
         
         bot.reply_to(message, "❌ **Sorry!** To use this bot, you must join our channel first!\n\n👉 After joining the channel, click the **'Check Again'** button below.", parse_mode="Markdown", reply_markup=markup)
         return
 
-    send_main_menu(message)
+    send_main_menu_message(message)
 
 
-# মূল মেনু দেখানোর ফাংশন
-def send_main_menu(message):
+# মূল মেনু পাঠানোর ফাংশন (নতুন মেসেজ হিসেবে)
+def send_main_menu_message(message):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    btn_freeky = telebot.types.InlineKeyboardButton("🎁 **Free Key**", callback_data="btn_freeky")
-    btn_8ball = telebot.types.InlineKeyboardButton("🎱 **8 Ball Pool Hack**", callback_data="btn_8ball_pool")
-    
+    btn_freeky = telebot.types.InlineKeyboardButton("🎁 Free Key", callback_data="btn_freeky")
+    btn_8ball = telebot.types.InlineKeyboardButton("🎱 8 Ball Pool Hack", callback_data="btn_8ball_pool")
     markup.add(btn_freeky, btn_8ball)
     
     welcome_text = (
-        "👋 **Welcome to our bot!**\n\n"
+        "🎉 **Congratulations!**\n"
+        "✅ **You have successfully joined the channel and now you can use this bot!**\n\n"
         "✨ Choose your preferred option from the buttons below:"
     )
+    bot.send_message(message.chat.id, welcome_text, parse_mode="Markdown", reply_markup=markup)
+
+
+# মূল মেনু আপডেট করার ফাংশন (এডিট করার জন্য)
+def edit_to_main_menu(call):
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    btn_freeky = telebot.types.InlineKeyboardButton("🎁 Free Key", callback_data="btn_freeky")
+    btn_8ball = telebot.types.InlineKeyboardButton("🎱 8 Ball Pool Hack", callback_data="btn_8ball_pool")
+    markup.add(btn_freeky, btn_8ball)
     
-    if isinstance(message, telebot.types.CallbackQuery):
-        bot.send_message(message.message.chat.id, welcome_text, parse_mode="Markdown", reply_markup=markup)
-    else:
-        bot.reply_to(message, welcome_text, parse_mode="Markdown", reply_markup=markup)
+    welcome_text = (
+        "🎉 **Congratulations!**\n"
+        "✅ **Subscription verified successfully! You can now use the bot.**\n\n"
+        "✨ Choose an option below:"
+    )
+    bot.edit_message_text(welcome_text, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="Markdown", reply_markup=markup)
 
 
 # ২. সাবস্ক্রিপশন চেক কলব্যাক
@@ -79,10 +91,10 @@ def send_main_menu(message):
 def callback_check_sub(call):
     user_id = call.from_user.id
     if check_user_subscription(user_id):
-        bot.answer_callback_query(call.id, "✅ Thank you! Subscription verified successfully.")
-        send_main_menu(call)
+        bot.answer_callback_query(call.id, "✅ Verified successfully!")
+        edit_to_main_menu(call)
     else:
-        bot.answer_callback_query(call.id, "❌ You haven't joined the channel yet!", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ You haven't joined the channel yet! Please join first.", show_alert=True)
 
 
 # ৩. ইনলাইন বাটন হ্যান্ডলার
@@ -90,31 +102,28 @@ def callback_check_sub(call):
 def handle_inline_buttons(call):
     chat_id = call.message.chat.id
     
-    # ফ্রি কি বাটন চাপলে
     if call.data == "btn_freeky":
         data = load_data()
         free_code = data.get("freeky", "⚠️ No free key is currently set.")
         bot.answer_callback_query(call.id)
         bot.send_message(chat_id, f"🔑 **Free Key Information:**\n\n{free_code}", parse_mode="Markdown")
 
-    # 8 Ball Pool Hack বাটন চাপলে (OS সিলেক্ট করার অপশন)
     elif call.data == "btn_8ball_pool":
         markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-        btn_android = telebot.types.InlineKeyboardButton("🤖 **Android**", callback_data="os_android")
-        btn_ios = telebot.types.InlineKeyboardButton("🍏 **iOS (Apple)**", callback_data="os_ios")
-        btn_back = telebot.types.InlineKeyboardButton("🔙 **Go Back**", callback_data="back_to_main")
+        btn_android = telebot.types.InlineKeyboardButton("🤖 Android", callback_data="os_android")
+        btn_ios = telebot.types.InlineKeyboardButton("🍏 iOS (Apple)", callback_data="os_ios")
+        btn_back = telebot.types.InlineKeyboardButton("🔙 Go Back", callback_data="back_to_main")
         markup.add(btn_android, btn_ios)
         markup.add(btn_back)
         
         bot.edit_message_text("🎱 You selected **8 Ball Pool Hack**.\n\n📱 Please select your device operating system:", 
                               chat_id=chat_id, message_id=call.message.message_id, parse_mode="Markdown", reply_markup=markup)
 
-    # অ্যান্ড্রয়েড ও আইওএস উভয়ের জন্য প্রাইস লিস্ট
     elif call.data in ["os_android", "os_ios"]:
         os_name = "🤖 **Android Version**" if call.data == "os_android" else "🍏 **iOS (Apple) Version**"
         
         markup = telebot.types.InlineKeyboardMarkup()
-        markup.add(telebot.types.InlineKeyboardButton("🔙 **Go Back**", callback_data="btn_8ball_pool"))
+        markup.add(telebot.types.InlineKeyboardButton("🔙 Go Back", callback_data="btn_8ball_pool"))
         
         price_text = (
             f"🎉 **Dussehra Special Offer ({os_name})** 🎁\n\n"
@@ -129,14 +138,13 @@ def handle_inline_buttons(call):
         
         bot.edit_message_text(price_text, chat_id=chat_id, message_id=call.message.message_id, parse_mode="Markdown", reply_markup=markup)
 
-    # মূল মেনুতে ফিরে যাওয়ার জন্য
     elif call.data == "back_to_main":
         markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-        btn_freeky = telebot.types.InlineKeyboardButton("🎁 **Free Key**", callback_data="btn_freeky")
-        btn_8ball = telebot.types.InlineKeyboardButton("🎱 **8 Ball Pool Hack**", callback_data="btn_8ball_pool")
+        btn_freeky = telebot.types.InlineKeyboardButton("🎁 Free Key", callback_data="btn_freeky")
+        btn_8ball = telebot.types.InlineKeyboardButton("🎱 8 Ball Pool Hack", callback_data="btn_8ball_pool")
         markup.add(btn_freeky, btn_8ball)
         
-        bot.edit_message_text("👋 **Welcome back to the main menu!**\n\n✨ Choose an option below:", 
+        bot.edit_message_text("🎉 **Welcome back to the main menu!**\n\n✨ Choose an option below:", 
                               chat_id=chat_id, message_id=call.message.message_id, parse_mode="Markdown", reply_markup=markup)
 
 
@@ -181,5 +189,5 @@ def keyword_responder(message):
 
 # বট রান করার জন্য
 if __name__ == '__main__':
-    print("Bot is running with English interface & Dussehra Offer...")
+    print("Bot is running cleanly without markdown stars on buttons...")
     bot.infinity_polling()
