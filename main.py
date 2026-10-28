@@ -28,7 +28,7 @@ def run_web():
 # আপনার চ্যানেলের সঠিক আইডি
 CHANNEL_ID = -1004343769999
 
-# আপনার চ্যানেলের ইনভাইট লিঙ্ক
+# আপনার আসল চ্যানেলের ইনভাইট লিঙ্ক (এখানে অন্য কোনো লিংক নেই)
 INVITE_LINK = "https://t.me/+8DV9O3hNpWtlMWM1"
 
 
@@ -66,10 +66,11 @@ def check_user_subscription(user_id):
       return False
   except Exception as e:
     print(f"Error checking subscription: {e}")
-    return False
+    # কোনো কারণে এরর আসলে সাময়িকভাবে পাস করার জন্য True রাখতে পারেন
+    return True
 
 
-# মেনু বাটন তৈরি করার ফাংশন (চ্যাটের নিচে যে দুটি বাটন থাকবে)
+# মেনু বাটন তৈরি করার ফাংশন
 def get_main_menu_keyboard():
   markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
   btn_free = types.KeyboardButton("🎁 Free Key / Hack")
@@ -84,33 +85,13 @@ def send_welcome(message):
   user_id = message.from_user.id
   save_user(user_id)
 
-  if check_user_subscription(user_id):
-    bot.send_message(
-        message.chat.id,
-        "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 𝐇𝐚𝐜𝐤𝐞𝐫!** 🎱\n\n"
-        "✨ **You are verified!** Choose an option from the menu below: 👇",
-        reply_markup=get_main_menu_keyboard(),
-        parse_mode="Markdown",
-    )
-  else:
-    markup = types.InlineKeyboardMarkup(row_width=1)
-    btn_channel = types.InlineKeyboardButton(
-        "📢 Join Our Official Channel 🚀", url=INVITE_LINK
-    )
-    btn_check = types.InlineKeyboardButton(
-        "🔄 Check Membership ✅", callback_data="check_sub"
-    )
-    markup.add(btn_channel, btn_check)
-
-    warning_text = (
-        "⚠️ **Access Denied! Must Join Channel!** 🔒\n\n"
-        "To use this bot, you **must join** our official channel first! 🛑\n\n"
-        "👉 Click the button below to join, then click the **Check Membership**"
-        " button! 👇"
-    )
-    bot.send_message(
-        message.chat.id, warning_text, reply_markup=markup, parse_mode="Markdown"
-    )
+  bot.send_message(
+      message.chat.id,
+      "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 𝐇𝐚𝐜𝐤𝐞𝐫!** 🎱\n\n"
+      "✨ Choose an option from the menu below: 👇",
+      reply_markup=get_main_menu_keyboard(),
+      parse_mode="Markdown",
+  )
 
 
 # অ্যাডমিন স্ট্যাটাস দেখার জন্য /stats কমান্ড
@@ -125,36 +106,6 @@ def bot_stats(message):
     )
   else:
     bot.reply_to(message, "❌ You are not authorized to use this command!")
-
-
-# "Check Membership" বাটনে ক্লিক করলে যা কাজ করবে
-@bot.callback_query_handler(func=lambda call: call.data == "check_sub")
-def verify_subscription(call):
-  user_id = call.from_user.id
-
-  if check_user_subscription(user_id):
-    success_text = (
-        "🎉 **Verification Successful! Thank you for joining!** 🔥\n\n"
-        "✨ **You can now use the bot freely.** Choose from the menu below! 👇"
-    )
-    try:
-      bot.delete_message(call.message.chat.id, call.message.message_id)
-    except Exception as e:
-      print(f"Error deleting message: {e}")
-
-    bot.send_message(
-        call.message.chat.id,
-        success_text,
-        reply_markup=get_main_menu_keyboard(),
-        parse_mode="Markdown",
-    )
-    bot.answer_callback_query(call.id, "✅ Verified Successfully! 🎉")
-  else:
-    bot.answer_callback_query(
-        call.id,
-        "❌ You haven't joined the channel yet! Please join first.",
-        show_alert=True,
-    )
 
 
 # Android, iOS এবং Back বাটন ইনলাইন ক্লিক হ্যান্ডলার
@@ -242,16 +193,7 @@ def handle_device_selection(call):
 # সাধারণ টেক্সট মেসেজ ও মেনু বাটনের হ্যান্ডলার
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
-  user_id = message.from_user.id
   text = message.text.strip()
-
-  if not check_user_subscription(user_id):
-    bot.reply_to(
-        message,
-        "⚠️ **Please join our channel first and verify via /start!** 🛑",
-        parse_mode="Markdown",
-    )
-    return
 
   # ইউজার যখন নিচের মেনু থেকে "🎁 Free Key / Hack" এ ক্লিক করবে
   if text == "🎁 Free Key / Hack":
@@ -265,7 +207,11 @@ def handle_all_messages(message):
     )
 
   # ইউজার যখন নিচের মেনু থেকে "🎱 8 Ball Pool Hack" এ ক্লিক করবে
-  elif text == "🎱 8 Ball Pool Hack" or "8 ball pool" in text.lower() or "hack" in text.lower():
+  elif (
+      text == "🎱 8 Ball Pool Hack"
+      or "8 ball pool" in text.lower()
+      or "hack" in text.lower()
+  ):
     markup = types.InlineKeyboardMarkup(row_width=2)
     btn_android = types.InlineKeyboardButton(
         "🤖 Android", callback_data="price_android"
