@@ -4,11 +4,11 @@ from flask import Flask
 import telebot
 from telebot import types
 
-# আপনার নতুন টেলিগ্রাম বটের টোকেন এখানে বসানো হলো
+# আপনার নতুন টেলিগ্রাম বটের টোকেন
 TOKEN = "8912797126:AAEo6jGLJzNelJtMM3t3iZ9FEDqlMmo8gl0"
 bot = telebot.TeleBot(TOKEN)
 
-ADMIN_ID = 123456789
+ADMIN_ID = 123456789  # আপনার আসল টেলিগ্রাম ইউজার আইডি
 
 app = Flask("")
 
@@ -21,6 +21,11 @@ def home():
 def run_web():
   port = int(os.environ.get("PORT", 8080))
   app.run(host="0.0.0.0", port=port)
+
+
+# আপনার অফিশিয়াল চ্যানেলের সঠিক আইডি এবং ইনভাইট লিঙ্ক
+CHANNEL_ID = -1004343769999
+INVITE_LINK = "https://t.me/+8DV9O3hNpWtlMWM1"
 
 
 def save_user(user_id):
@@ -41,6 +46,20 @@ def get_total_users():
     return len(f.read().splitlines())
 
 
+# চ্যানেল সাবস্ক্রিপশন চেক করার ফাংশন
+def check_user_subscription(user_id):
+  try:
+    chat_member = bot.get_chat_member(CHANNEL_ID, user_id)
+    valid_status = ["creator", "administrator", "member"]
+    if chat_member.status in valid_status:
+      return True
+    else:
+      return False
+  except Exception as e:
+    print(f"Error checking subscription: {e}")
+    return True
+
+
 def get_main_menu_keyboard():
   markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
   btn_free = types.KeyboardButton("🎁 Free Key / Hack")
@@ -54,13 +73,33 @@ def send_welcome(message):
   user_id = message.from_user.id
   save_user(user_id)
 
-  bot.send_message(
-      message.chat.id,
-      "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 𝐇𝐚𝐜𝐤𝐞𝐫!** 🎱\n\n"
-      "✨ Choose an option from the menu below: 👇",
-      reply_markup=get_main_menu_keyboard(),
-      parse_mode="Markdown",
-  )
+  if check_user_subscription(user_id):
+    bot.send_message(
+        message.chat.id,
+        "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 𝐇𝐚𝐜𝐤𝐞𝐫!** 🎱\n\n"
+        "✨ **You are verified!** Choose an option from the menu below: 👇",
+        reply_markup=get_main_menu_keyboard(),
+        parse_mode="Markdown",
+    )
+  else:
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    btn_channel = types.InlineKeyboardButton(
+        "📢 Join Our Official Channel 🚀", url=INVITE_LINK
+    )
+    btn_check = types.InlineKeyboardButton(
+        "🔄 Check Membership ✅", callback_data="check_sub"
+    )
+    markup.add(btn_channel, btn_check)
+
+    warning_text = (
+        "⚠️ **Access Denied! Must Join Channel!** 🔒\n\n"
+        "To use this bot, you **must join** our official channel first! 🛑\n\n"
+        "👉 Click the button below to join, then click the **Check Membership**"
+        " button! 👇"
+    )
+    bot.send_message(
+        message.chat.id, warning_text, reply_markup=markup, parse_mode="Markdown"
+    )
 
 
 @bot.message_handler(commands=["stats"])
@@ -74,6 +113,35 @@ def bot_stats(message):
     )
   else:
     bot.reply_to(message, "❌ You are not authorized to use this command!")
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "check_sub")
+def verify_subscription(call):
+  user_id = call.from_user.id
+
+  if check_user_subscription(user_id):
+    success_text = (
+        "🎉 **Verification Successful! Thank you for joining!** 🔥\n\n"
+        "✨ **You can now use the bot freely.** Choose from the menu below: 👇"
+    )
+    try:
+      bot.delete_message(call.message.chat.id, call.message.message_id)
+    except Exception as e:
+      print(f"Error deleting message: {e}")
+
+    bot.send_message(
+        call.message.chat.id,
+        success_text,
+        reply_markup=get_main_menu_keyboard(),
+        parse_mode="Markdown",
+    )
+    bot.answer_callback_query(call.id, "✅ Verified Successfully! 🎉")
+  else:
+    bot.answer_callback_query(
+        call.id,
+        "❌ You haven't joined the channel yet! Please join first.",
+        show_alert=True,
+    )
 
 
 @bot.callback_query_handler(
@@ -159,7 +227,16 @@ def handle_device_selection(call):
 
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
+  user_id = message.from_user.id
   text = message.text.strip()
+
+  if not check_user_subscription(user_id):
+    bot.reply_to(
+        message,
+        "⚠️ **Please join our channel first and verify via /start!** 🛑",
+        parse_mode="Markdown",
+    )
+    return
 
   if text == "🎁 Free Key / Hack":
     my_secret_key = "KURO-ECWM35-2NDYZY-MANP9J"
