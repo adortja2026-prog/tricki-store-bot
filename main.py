@@ -16,10 +16,11 @@ RENDER_URL = "https://tricki-store-bot.onrender.com"
 
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = "keywords.json"
+USERS_FILE = "users.json"
 
 app = Flask(__name__)
 
-# ডাটা লোড ও সেভ করার ফাংশন
+# কি-ওয়ার্ড ডাটা লোড ও সেভ করার ফাংশন
 def load_data():
     if not os.path.exists(DATA_FILE):
         default_data = {"freeky": "✨ Your Free Key or post will appear here."}
@@ -31,6 +32,21 @@ def load_data():
 def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
+
+# ইউজার আইডি সেভ করার ফাংশন (ব্রডকাস্টের জন্য)
+def add_user(user_id):
+    users = []
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, "r", encoding="utf-8") as f:
+            try:
+                users = json.load(f)
+            except json.JSONDecodeError:
+                users = []
+    
+    if user_id not in users:
+        users.append(user_id)
+        with open(USERS_FILE, "w", encoding="utf-8") as f:
+            json.dump(users, f, ensure_ascii=False, indent=4)
 
 # ইউজার চ্যানেলে জয়েন আছে কিনা চেক করার ফাংশন
 def check_user_subscription(user_id):
@@ -47,6 +63,7 @@ def check_user_subscription(user_id):
 @bot.message_handler(commands=['start'])
 def start_command(message):
     user_id = message.from_user.id
+    add_user(user_id)  # ব্রডকাস্টের জন্য ইউজার সেভ করা হলো
     
     if not check_user_subscription(user_id):
         markup = telebot.types.InlineKeyboardMarkup()
@@ -93,6 +110,7 @@ def edit_to_main_menu(call):
 @bot.callback_query_handler(func=lambda call: call.data == "check_sub")
 def callback_check_sub(call):
     user_id = call.from_user.id
+    add_user(user_id)
     if check_user_subscription(user_id):
         bot.answer_callback_query(call.id, "✅ Verified successfully!")
         edit_to_main_menu(call)
@@ -173,10 +191,52 @@ def set_new_code(message):
     bot.reply_to(message, f"✅ **Success!** New code set for keyword '{keyword}':\n\n{new_code_text}", parse_mode="Markdown")
 
 
-# ৫. সাধারণ ইউজার টেক্সট হ্যান্ডলার
+# ৫. অ্যাডমিন কমান্ড: ব্রডকাস্ট (সব ইউজারের কাছে মেসেজ পাঠানো)
+@bot.message_handler(commands=['broadcast'])
+def broadcast_message(message):
+    if message.from_user.id != ADMIN_ID:
+        bot.reply_to(message, "❌ Sorry, this command can only be used by the admin!")
+        return
+
+    # কমান্ডের পর কি মেসেজ দেওয়া হয়েছে তা আলাদা করা
+    text_parts = message.text.split(maxsplit=1)
+    if len(text_parts) < 2:
+        bot.reply_to(message, "⚠️ **Use the correct format. Example:**\n`/broadcast Hello everyone, new offer is live!`", parse_mode="Markdown")
+        return
+
+    broadcast_text = text_parts[1]
+
+    if not os.path.exists(USERS_FILE):
+        bot.reply_to(message, "❌ No users found in the database yet.")
+        return
+
+    with open(USERS_FILE, "r", encoding="utf-8") as f:
+        try:
+            users = json.load(f)
+        except json.JSONDecodeError:
+            users = []
+
+    success_count = 0
+    fail_count = 0
+
+    bot.reply_to(message, f"📢 Broadcast started for {len(users)} users. Please wait...")
+
+    for user_id in users:
+        try:
+            bot.send_message(user_id, f"📢 **Announcement:**\n\n{broadcast_text}", parse_mode="Markdown")
+            success_count += 1
+        except Exception as e:
+            fail_count += 1
+            print(f"Failed to send message to {user_id}: {e}")
+
+    bot.send_message(message.chat.id, f"✅ **Broadcast Completed!**\n\n🎯 Successfully sent: {success_count}\n❌ Failed (Blocked bot): {fail_count}")
+
+
+# ৬. সাধারণ ইউজার টেক্সট হ্যান্ডলার
 @bot.message_handler(func=lambda message: True)
 def keyword_responder(message):
     user_id = message.from_user.id
+    add_user(user_id)
 
     if not check_user_subscription(user_id):
         bot.reply_to(message, "❌ To use the bot, you must join our channel first! Type `/start` and try again.", parse_mode="Markdown")
@@ -208,7 +268,6 @@ def index():
 
 
 if __name__ == '__main__':
-    # ওয়েবਹੁক অটো সেটআপ করা
     bot.remove_webhook()
     bot.set_webhook(url=f'{RENDER_URL}/{TOKEN}')
     
