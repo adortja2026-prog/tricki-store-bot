@@ -1,6 +1,8 @@
 import json
 import os
 import telebot
+from flask import Flask
+from threading import Thread
 
 # আপনার বটের টোকেন এবং অ্যাডমিন আইডি
 TOKEN = "8912797126:AAEo6jGLJzNelJtMM3t3iZ9FEDqlMmo8gl0"
@@ -13,10 +15,25 @@ CHANNEL_INVITE_LINK = "https://t.me/+8DV9O3hNpWtlMWM1"
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = "keywords.json"
 
+# ফ্লাস্ক সার্ভার তৈরি (Render পোর্ট ও মনিটরিংয়ের জন্য)
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot is active and running!"
+
+def run_flask():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run_flask)
+    t.start()
+
+
 # ডাটা লোড ও সেভ করার ফাংশন
 def load_data():
     if not os.path.exists(DATA_FILE):
-        default_data = {"freeky": "✨ **Your Free Key or post will appear here.**"}
+        default_data = {"freeky": "✨ Your Free Key or post will appear here."}
         with open(DATA_FILE, "w", encoding="utf-8") as f:
             json.dump(default_data, f, ensure_ascii=False, indent=4)
     with open(DATA_FILE, "r", encoding="utf-8") as f:
@@ -44,7 +61,6 @@ def start_command(message):
     
     if not check_user_subscription(user_id):
         markup = telebot.types.InlineKeyboardMarkup()
-        # বাটন থেকে স্টার সরিয়ে দেওয়া হয়েছে
         btn_channel = telebot.types.InlineKeyboardButton("📢 Join Our Channel", url=CHANNEL_INVITE_LINK)
         btn_check = telebot.types.InlineKeyboardButton("🔄 Check Again", callback_data="check_sub")
         markup.add(btn_channel)
@@ -187,7 +203,9 @@ def keyword_responder(message):
     else:
         bot.reply_to(message, "❓ Sorry, nothing found with this keyword. Or type `/start` to view the menu.", parse_mode="Markdown")
 
-# বট রান করার জন্য
+# বট এবং ফ্লাস্ক সার্ভার রান করার জন্য
 if __name__ == '__main__':
-    print("Bot is running cleanly without markdown stars on buttons...")
+    print("Starting Flask web server for Render keep-alive...")
+    keep_alive()
+    print("Bot is running with polling...")
     bot.infinity_polling()
