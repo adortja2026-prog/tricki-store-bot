@@ -251,15 +251,32 @@ def broadcast_message(message):
     bot.send_message(message.chat.id, f"✅ **Broadcast Completed!**\n\n🎯 Successfully sent: {success_count}\n❌ Failed (Blocked bot): {fail_count}")
 
 
-# ৭. সাধারণ ইউজার টেক্সট হ্যান্ডলার (অজানা মেসেজ অ্যাডমিনের কাছে ফরোয়ার্ড করা সহ)
+# ৭. সাধারণ ইউজার টেক্সট হ্যান্ডলার এবং অ্যাডমিন রিপ্লাই হ্যান্ডলার
 @bot.message_handler(func=lambda message: True)
 def keyword_responder(message):
     user_id = message.from_user.id
     add_user(user_id)
 
     if not check_user_subscription(user_id):
-        bot.reply_to(message, "❌ To use the bot, you must join our channel first! Type `/start` and try again.", parse_mode="Markdown")
-        return
+        if user_id != ADMIN_ID:
+            bot.reply_to(message, "❌ To use the bot, you must join our channel first! Type `/start` and try again.", parse_mode="Markdown")
+            return
+
+    # যদি অ্যাডমিন নিজে বটে মেসেজ পাঠান এবং সেটি কোনো নোটিফিকেশন মেসেজের রিপ্লাই হয়
+    if user_id == ADMIN_ID and message.reply_to_message:
+        try:
+            replied_msg = message.reply_to_message
+            if replied_msg.text and "🆔 ID:" in replied_msg.text:
+                # টেক্সট থেকে ইউজারের আসল আইডি বের করার সহজ লজিক
+                lines = replied_msg.text.split("\n")
+                for line in lines:
+                    if "🆔 ID:" in line:
+                        target_user_id = int(line.replace("🆔 ID:", "").replace("`", "").strip())
+                        bot.send_message(target_user_id, f"💬 **Support Reply:**\n\n{message.text}", parse_mode="Markdown")
+                        bot.reply_to(message, "✅ Reply sent successfully to the user!")
+                        return
+        except Exception as e:
+            print(f"Error replying to user: {e}")
 
     user_text = message.text.strip().lower()
     data = load_data()
@@ -267,28 +284,22 @@ def keyword_responder(message):
     if user_text in data:
         bot.reply_to(message, f"✨ **Your requested information:**\n\n{data[user_text]}", parse_mode="Markdown")
     else:
-        # যদি অ্যাডমিন নিজে বটে মেসেজ পাঠান এবং সেটি কোনো ইউজারের মেসেজের রিপ্লাই হয়
-        if user_id == ADMIN_ID and message.reply_to_message:
-            try:
-                # যে মেসেজটি ফরোয়ার্ড করা হয়েছিল, তার ক্যাপশন বা টেক্সট থেকে ইউজারের আসল আইডি বের করা
-                forwarded_msg = message.reply_to_message
-                if forwarded_msg.forward_from:
-                    target_user_id = forwarded_msg.forward_from.id
-                    bot.send_message(target_user_id, f"💬 **Admin Reply:**\n\n{message.text}", parse_mode="Markdown")
-                    bot.reply_to(message, "✅ Reply sent to the user successfully!")
-                    return
-            except Exception as e:
-                print(f"Error replying to user: {e}")
+        # যদি অ্যাডমিন হন, সাধারণ টেক্সট ইগনোর করবে
+        if user_id == ADMIN_ID:
+            return
 
-        # সাধারণ ইউজারের অজানা মেসেজ অ্যাডমিনের ইনবক্সে ফরোয়ার্ড করা
-        if user_id != ADMIN_ID:
-            try:
-                bot.forward_message(ADMIN_ID, message.chat.id, message.id)
-                bot.send_message(ADMIN_ID, f"👤 **New message from user:** [{message.from_user.first_name}](tg://user?id={user_id})\n💡 *Reply directly to this message to answer the user.*", parse_mode="Markdown")
-            except Exception as e:
-                print(f"Error forwarding message to admin: {e}")
-
-        bot.reply_to(message, "❓ Sorry, nothing found with this keyword. Or type `/start` to view the menu.", parse_mode="Markdown")
+        # অজানা মেসেজ হলে ইউজারকে কোনো এরর মেসেজ না দিয়ে শুধু অ্যাডমিনের কাছে নোটিশ পাঠানো
+        try:
+            bot.send_message(
+                ADMIN_ID, 
+                f"👤 **User:** [{message.from_user.first_name}](tg://user?id={user_id})\n"
+                f"🆔 ID: `{user_id}`\n\n"
+                f"💬 **Message:** {message.text}\n\n"
+                f"👉 এই ইউজারকে উত্তর দিতে চাইলে এই মেসেজে Reply দিয়ে আপনার উত্তর লিখে পাঠান।", 
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            print(f"Error sending message to admin: {e}")
 
 
 # ফ্লাস্ক ওয়েবਹੁক রুট (Webhook Route)
