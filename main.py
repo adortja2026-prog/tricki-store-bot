@@ -1,34 +1,23 @@
 import json
 import os
 import telebot
-from flask import Flask
-from threading import Thread
+from flask import Flask, request
 
-# আপনার বটের টোকেন এবং অ্যাডমিন আইডি
-TOKEN = "8912797126:AAEo6jGLJzNelJtMM3t3iZ9FEDqlMmo8gl0"
+# আপনার নতুন টোকেন এবং অ্যাডমিন আইডি
+TOKEN = "8912797126:AAF6EFSQZU-tySXsGl1t__AAT-7oAc2MDp8"
 ADMIN_ID = 7559861666
 
 # আপনার চ্যানেলের চ্যাট আইডি এবং ইনভাইট লিংক
 CHANNEL_ID = -1004343769999
 CHANNEL_INVITE_LINK = "https://t.me/+8DV9O3hNpWtlMWM1"
 
+# আপনার রেন্ডার অ্যাপের লিংক এখানে বসাবেন (যেমন: https://your-app-name.onrender.com)
+RENDER_URL = "https://YOUR_RENDER_APP_NAME.onrender.com"
+
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = "keywords.json"
 
-# ফ্লাস্ক সার্ভার তৈরি (Render পোর্ট ও মনিটরিংয়ের জন্য)
-app = Flask('')
-
-@app.route('/')
-def home():
-    return "Bot is active and running!"
-
-def run_flask():
-    app.run(host='0.0.0.0', port=8080)
-
-def keep_alive():
-    t = Thread(target=run_flask)
-    t.start()
-
+app = Flask(__name__)
 
 # ডাটা লোড ও সেভ করার ফাংশন
 def load_data():
@@ -54,7 +43,7 @@ def check_user_subscription(user_id):
     return False
 
 
-# ১. /start কমান্ড হ্যান্ডলার (চ্যানেল চেক + মেইন মেনু বাটন)
+# ১. /start কমান্ড হ্যান্ডলার
 @bot.message_handler(commands=['start'])
 def start_command(message):
     user_id = message.from_user.id
@@ -72,7 +61,6 @@ def start_command(message):
     send_main_menu_message(message)
 
 
-# মূল মেনু পাঠানোর ফাংশন (নতুন মেসেজ হিসেবে)
 def send_main_menu_message(message):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     btn_freeky = telebot.types.InlineKeyboardButton("🎁 Free Key", callback_data="btn_freeky")
@@ -87,7 +75,6 @@ def send_main_menu_message(message):
     bot.send_message(message.chat.id, welcome_text, parse_mode="Markdown", reply_markup=markup)
 
 
-# মূল মেনু আপডেট করার ফাংশন (এডিট করার জন্য)
 def edit_to_main_menu(call):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     btn_freeky = telebot.types.InlineKeyboardButton("🎁 Free Key", callback_data="btn_freeky")
@@ -203,9 +190,26 @@ def keyword_responder(message):
     else:
         bot.reply_to(message, "❓ Sorry, nothing found with this keyword. Or type `/start` to view the menu.", parse_mode="Markdown")
 
-# বট এবং ফ্লাস্ক সার্ভার রান করার জন্য
+
+# ফ্লাস্ক ওয়েবਹੁক রুট (Webhook Route)
+@app.route(f'/{TOKEN}', methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return "!", 200
+    else:
+        return "Invalid Data", 403
+
+@app.route('/')
+def index():
+    return "Bot is running with Webhook!"
+
+
 if __name__ == '__main__':
-    print("Starting Flask web server for Render keep-alive...")
-    keep_alive()
-    print("Bot is running with polling...")
-    bot.infinity_polling()
+    # ওয়েবਹੁক সেটআপ করা
+    bot.remove_webhook()
+    bot.set_webhook(url=f'{RENDER_URL}/{TOKEN}')
+    
+    app.run(host='0.0.0.0', port=8080)
