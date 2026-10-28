@@ -8,7 +8,7 @@ from telebot import types
 TOKEN = "8912797126:AAFmdn7oJEZdbZ1FzOQocrYKrvORF8LUqOE"
 bot = telebot.TeleBot(TOKEN)
 
-# আপনার নিজস্ব টেলিগ্রাম আইডি এখানে দিন (স্ট্যাট দেখার জন্য)
+# আপনার নিজের টেলিগ্রাম আইডি এখানে দিন (স্ট্যাট দেখার জন্য)
 ADMIN_ID = 123456789  # <--- আপনার আসল টেলিগ্রাম ইউজার আইডি এখানে দেবেন
 
 # রেন্ডারের ফ্লাস্ক ওয়েব সার্ভার
@@ -28,7 +28,7 @@ def run_web():
 # আপনার অফিশিয়াল চ্যানেলের সঠিক আইডি
 CHANNEL_ID = -1004343769999
 
-# আপনার আসল চ্যানেলের ইনভাইট লিঙ্ক (এখানে নির্দিষ্ট করা আছে)
+# আপনার আসল চ্যানেলের সঠিক ইনভাইট লিঙ্ক
 INVITE_LINK = "https://t.me/+8DV9O3hNpWtlMWM1"
 
 
@@ -54,7 +54,7 @@ def get_total_users():
     return len(f.read().splitlines())
 
 
-# ব্যবহারকারী চ্যানেলটিতে জয়েন করেছে কিনা তা চেক করার ফাংশন
+# ব্যবহারকারী চ্যানেলটিতে জয়েন করেছে কিনা তা চেক করার ফাংশন (সেফ মোড)
 def check_user_subscription(user_id):
   try:
     chat_member = bot.get_chat_member(CHANNEL_ID, user_id)
@@ -66,7 +66,8 @@ def check_user_subscription(user_id):
       return False
   except Exception as e:
     print(f"Error checking subscription: {e}")
-    return False
+    # কোনো এপিআই এরর বা সমস্যা হলে বট যেন ইউজারকে আটকা না দেয়, তাই True রিটার্ন করবে
+    return True
 
 
 # নিচের স্থায়ী মেনু বাটন
@@ -84,33 +85,13 @@ def send_welcome(message):
   user_id = message.from_user.id
   save_user(user_id)
 
-  if check_user_subscription(user_id):
-    bot.send_message(
-        message.chat.id,
-        "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 𝐇𝐚𝐜𝐤𝐞𝐫!** 🎱\n\n"
-        "✨ **You are verified!** Choose an option from the menu below: 👇",
-        reply_markup=get_main_menu_keyboard(),
-        parse_mode="Markdown",
-    )
-  else:
-    markup = types.InlineKeyboardMarkup(row_width=1)
-    btn_channel = types.InlineKeyboardButton(
-        "📢 Join Our Official Channel 🚀", url=INVITE_LINK
-    )
-    btn_check = types.InlineKeyboardButton(
-        "🔄 Check Membership ✅", callback_data="check_sub"
-    )
-    markup.add(btn_channel, btn_check)
-
-    warning_text = (
-        "⚠️ **Access Denied! Must Join Channel!** 🔒\n\n"
-        "To use this bot, you **must join** our official channel first! 🛑\n\n"
-        f"👉 Click the button below to join, then click the **Check Membership**"
-        f" button! 👇\n\n🔗 {INVITE_LINK}"
-    )
-    bot.send_message(
-        message.chat.id, warning_text, reply_markup=markup, parse_mode="Markdown"
-    )
+  bot.send_message(
+      message.chat.id,
+      "🎉 **Welcome back to 𝟖 𝐁𝐚𝐥𝐥 𝐏𝐨𝐨𝐥 𝐇𝐚𝐜𝐤𝐞𝐫!** 🎱\n\n"
+      "✨ **You are verified!** Choose an option from the menu below: 👇",
+      reply_markup=get_main_menu_keyboard(),
+      parse_mode="Markdown",
+  )
 
 
 # অ্যাডমিন স্ট্যাটাস দেখার জন্য /stats কমান্ড
@@ -125,36 +106,6 @@ def bot_stats(message):
     )
   else:
     bot.reply_to(message, "❌ You are not authorized to use this command!")
-
-
-# "Check Membership" বাটনে ক্লিক করলে যা কাজ করবে
-@bot.callback_query_handler(func=lambda call: call.data == "check_sub")
-def verify_subscription(call):
-  user_id = call.from_user.id
-
-  if check_user_subscription(user_id):
-    success_text = (
-        "🎉 **Verification Successful! Thank you for joining!** 🔥\n\n"
-        "✨ **You can now use the bot freely.** Choose from the menu below: 👇"
-    )
-    try:
-      bot.delete_message(call.message.chat.id, call.message.message_id)
-    except Exception as e:
-      print(f"Error deleting message: {e}")
-
-    bot.send_message(
-        call.message.chat.id,
-        success_text,
-        reply_markup=get_main_menu_keyboard(),
-        parse_mode="Markdown",
-    )
-    bot.answer_callback_query(call.id, "✅ Verified Successfully! 🎉")
-  else:
-    bot.answer_callback_query(
-        call.id,
-        "❌ You haven't joined the channel yet! Please join first.",
-        show_alert=True,
-    )
 
 
 # Android ও iOS প্রাইস লিস্ট হ্যান্ডলার
@@ -213,7 +164,7 @@ def handle_device_selection(call):
         message_id=call.message.message_id,
         text=ios_price_text,
         reply_markup=markup,
-        parse_mode="Markdown",
+        parse_Mode="Markdown",
     )
 
   elif call.data == "back_to_menu":
@@ -242,16 +193,7 @@ def handle_device_selection(call):
 # সাধারণ টেক্সট মেসেজ ও মেনু বাটনের হ্যান্ডলার
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
-  user_id = message.from_user.id
   text = message.text.strip()
-
-  if not check_user_subscription(user_id):
-    bot.reply_to(
-        message,
-        "⚠️ **Please join our channel first and verify via /start!** 🛑",
-        parse_mode="Markdown",
-    )
-    return
 
   if text == "🎁 Free Key / Hack":
     my_secret_key = "KURO-ECWM35-2NDYZY-MANP9J"
