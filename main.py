@@ -266,30 +266,31 @@ def keyword_responder(message):
     if user_id == ADMIN_ID and message.reply_to_message:
         try:
             replied_msg = message.reply_to_message
-            if replied_msg.text and "🆔 ID:" in replied_msg.text:
+            target_user_id = None
+            
+            # ১. ফরোয়ার্ড করা মেসেজ থেকে আইডি বের করা
+            if replied_msg.forward_from:
+                target_user_id = replied_msg.forward_from.id
+            # ২. অথবা নোটিফিকেশন টেক্সট থেকে আইডি বের করা
+            elif replied_msg.text and "🆔 ID:" in replied_msg.text:
                 lines = replied_msg.text.split("\n")
-                target_user_id = None
                 for line in lines:
                     if "🆔 ID:" in line:
                         target_user_id = int(line.replace("🆔 ID:", "").replace("`", "").strip())
                         break
+            
+            if target_user_id:
+                if message.video:
+                    bot.send_video(target_user_id, message.video.file_id, caption=message.caption or "")
+                elif message.photo:
+                    bot.send_photo(target_user_id, message.photo[-1].file_id, caption=message.caption or "")
+                elif message.document:
+                    bot.send_document(target_user_id, message.document.file_id, caption=message.caption or "")
+                elif message.text:
+                    bot.send_message(target_user_id, f"💬 **Support Reply:**\n\n{message.text}", parse_mode="Markdown")
                 
-                if target_user_id:
-                    # যদি অ্যাডমিন ভিডিও পাঠান
-                    if message.video:
-                        bot.send_video(target_user_id, message.video.file_id, caption=message.caption or "")
-                    # যদি অ্যাডমিন ছবি পাঠান
-                    elif message.photo:
-                        bot.send_photo(target_user_id, message.photo[-1].file_id, caption=message.caption or "")
-                    # যদি অ্যাডমিন ডকুমেন্ট বা এপিকে ফাইল পাঠান
-                    elif message.document:
-                        bot.send_document(target_user_id, message.document.file_id, caption=message.caption or "")
-                    # যদি অ্যাডমিন সাধারণ টেক্সট পাঠান
-                    elif message.text:
-                        bot.send_message(target_user_id, f"💬 **Support Reply:**\n\n{message.text}", parse_mode="Markdown")
-                    
-                    bot.reply_to(message, "✅ Reply sent successfully to the user!")
-                    return
+                bot.reply_to(message, "✅ Reply sent successfully to the user!")
+                return
         except Exception as e:
             print(f"Error replying with media to user: {e}")
 
@@ -304,24 +305,18 @@ def keyword_responder(message):
             bot.reply_to(message, f"✨ **Your requested information:**\n\n{data[user_text]}", parse_mode="Markdown")
             return
 
-    # অজানা মেসেজ বা প্রশ্ন হলে ইউজারের তথ্যসহ অ্যাডমিনের কাছে পাঠানো
+    # ইউজার ছবি, ভিডিও বা অজানা মেসেজ পাঠালে সেটি সরাসরি অ্যাডমিনের কাছে ফরোয়ার্ড করা
     try:
-        msg_type = "Text"
-        if message.video: msg_type = "Video"
-        elif message.photo: msg_type = "Photo"
-        elif message.document: msg_type = "Document/APK"
-
+        bot.forward_message(ADMIN_ID, message.chat.id, message.id)
         bot.send_message(
             ADMIN_ID, 
             f"👤 **User:** [{message.from_user.first_name}](tg://user?id={user_id})\n"
-            f"🆔 ID: `{user_id}`\n"
-            f"📦 **Type:** {msg_type}\n\n"
-            f"💬 **Message/Caption:** {message.text or message.caption or 'No text'}\n\n"
-            f"👉 এই ইউজারকে ভিডিও বা উত্তর দিতে চাইলে এই নোটিফিকেশন মেসেজে Reply দিয়ে আপনার ভিডিও বা উত্তরটি পাঠান।", 
+            f"🆔 ID: `{user_id}`\n\n"
+            f"👉 এই ইউজারকে রিপ্লাই বা ভিডিও দিতে উপরে ফরোয়ার্ড হওয়া মেসেজ/ছবিতে Reply দিন।", 
             parse_mode="Markdown"
         )
     except Exception as e:
-        print(f"Error sending message to admin: {e}")
+        print(f"Error forwarding message to admin: {e}")
 
 
 # ফ্লাস্ক ওয়েবਹੁক রুট (Webhook Route)
