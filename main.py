@@ -4,14 +4,11 @@ from flask import Flask
 import telebot
 from telebot import types
 
-# আপনার টেলিগ্রাম বটের টোকেন
 TOKEN = "8912797126:AAFmdn7oJEZdbZ1FzOQocrYKrvORF8LUqOE"
 bot = telebot.TeleBot(TOKEN)
 
-# আপনার নিজের টেলিগ্রাম আইডি এখানে দিন (স্ট্যাট দেখার জন্য)
-ADMIN_ID = 123456789  # <--- আপনার আসল টেলিগ্রাম ইউজার আইডি এখানে দেবেন
+ADMIN_ID = 123456789
 
-# রেন্ডারের ফ্লাস্ক ওয়েব সার্ভার
 app = Flask("")
 
 
@@ -25,28 +22,21 @@ def run_web():
   app.run(host="0.0.0.0", port=port)
 
 
-# আপনার চ্যানেলের সঠিক আইডি
 CHANNEL_ID = -1004343769999
-
-# আপনার আসল চ্যানেলের সঠিক ইনভাইট লিঙ্ক
 INVITE_LINK = "https://t.me/+8DV9O3hNpWtlMWM1"
 
 
-# ইউজারের আইডি ফাইলে সেভ করার ফাংশন
 def save_user(user_id):
   if not os.path.exists("users.txt"):
     with open("users.txt", "w") as f:
       pass
-
   with open("users.txt", "r") as f:
     users = f.read().splitlines()
-
   if str(user_id) not in users:
     with open("users.txt", "a") as f:
       f.write(str(user_id) + "\n")
 
 
-# মোট ইউজারের সংখ্যা দেখার ফাংশন
 def get_total_users():
   if not os.path.exists("users.txt"):
     return 0
@@ -54,23 +44,19 @@ def get_total_users():
     return len(f.read().splitlines())
 
 
-# ব্যবহারকারী চ্যানেলটিতে জয়েন করেছে কিনা তা চেক করার ফাংশন
 def check_user_subscription(user_id):
   try:
     chat_member = bot.get_chat_member(CHANNEL_ID, user_id)
     valid_status = ["creator", "administrator", "member"]
-
     if chat_member.status in valid_status:
       return True
     else:
       return False
   except Exception as e:
     print(f"Error checking subscription: {e}")
-    # কোনো কারণে এরর আসলে সাময়িকভাবে পাস করার জন্য True রাখতে পারেন
     return True
 
 
-# নিচের স্থায়ী মেনু বাটন
 def get_main_menu_keyboard():
   markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
   btn_free = types.KeyboardButton("🎁 Free Key / Hack")
@@ -79,7 +65,6 @@ def get_main_menu_keyboard():
   return markup
 
 
-# /start কমান্ড হ্যান্ডলার (চ্যানেল জয়েন চেক সহ)
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
   user_id = message.from_user.id
@@ -114,7 +99,6 @@ def send_welcome(message):
     )
 
 
-# অ্যাডমিন স্ট্যাটাস দেখার জন্য /stats কমান্ড
 @bot.message_handler(commands=["stats"])
 def bot_stats(message):
   if message.from_user.id == ADMIN_ID:
@@ -128,7 +112,6 @@ def bot_stats(message):
     bot.reply_to(message, "❌ You are not authorized to use this command!")
 
 
-# "Check Membership" বাটনে ক্লিক করলে যা কাজ করবে
 @bot.callback_query_handler(func=lambda call: call.data == "check_sub")
 def verify_subscription(call):
   user_id = call.from_user.id
@@ -158,7 +141,6 @@ def verify_subscription(call):
     )
 
 
-# Android ও iOS প্রাইস লিস্ট হ্যান্ডলার
 @bot.callback_query_handler(
     func=lambda call: call.data in ["price_android", "price_ios", "back_to_menu"]
 )
@@ -240,7 +222,6 @@ def handle_device_selection(call):
   bot.answer_callback_query(call.id)
 
 
-# সাধারণ টেক্সট মেসেজ ও মেনু বাটনের হ্যান্ডলার
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
   user_id = message.from_user.id
